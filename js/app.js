@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard } from './screens/card.js?v=27';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
-const VOCAB_KEY = 'hsk_vocab_v8';
+const VOCAB_KEY = 'hsk_vocab_v9';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -281,10 +281,8 @@ function stats() {
         const hanzi = item.s || item.simplified;
         const found = ruMap.get(hanzi);
         const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
-        const rawT = Array.isArray(form.t) ? form.t.at(0) : form.t;
         const pinyin =
           (typeof rawI === 'string' ? rawI : (rawI && (rawI.pinyin || rawI.p))) ||
-          (typeof rawT === 'string' ? rawT : (rawT && (rawT.pinyin || rawT.p))) ||
           form.p ||
           (found && found.pinyin) ||
           '';
