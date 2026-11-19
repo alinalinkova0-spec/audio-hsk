@@ -170,7 +170,6 @@ function stats() {
 
         saveVocab(parsed);
         st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
-    }
     } catch (e) {
       st.textContent = 'Ошибка: ' + e.message;
     }
