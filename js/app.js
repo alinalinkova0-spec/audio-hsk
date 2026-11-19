@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard } from './screens/card.js?v=25';
 import { renderPhraseChoice } from './screens/segment.js?v=3';
 
-const VOCAB_KEY = 'hsk_vocab_v5';
+const VOCAB_KEY = 'hsk_vocab_v6';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
