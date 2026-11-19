@@ -8,10 +8,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch HSK JSON
+      - name: Build HSK 1-4 JSON
         run: |
           gh repo clone drkameleon/complete-hsk-vocabulary tmp -- --depth=1
-          cp tmp/complete.min.json hsk.json
+          node -e '
+            const fs = require("fs");
+            const out = [];
+            let id = 1;
+            for (const lvl of) {
+              const arr = JSON.parse(fs.readFileSync(`tmp/wordlists/exclusive/new/${lvl}.min.json`, "utf8"));
+              for (const w of arr) {
+                const f = (w.f && w.f[0]) || (w.forms && w.forms[0]) || {};
+                const tr = f.i || f.transcriptions || {};
+                const m = f.m || f.meanings || [];
+                const hanzi = w.s || w.simplified;
+                const ru = m.slice(0, 3).join(", ");
+                if (hanzi && ru) out.push({ id: "h_" + (id++), hanzi, pinyin: tr.y || tr.pinyin || "", ru, level: lvl });
+              }
+            }
+            fs.writeFileSync("hsk.json", JSON.stringify(out));
+          '
           rm -rf tmp
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -20,5 +36,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add hsk.json
-          git commit -m "Add hsk.json"
+          git commit -m "Update hsk.json 1-4"
           git push
