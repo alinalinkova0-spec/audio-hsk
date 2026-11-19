@@ -153,21 +153,30 @@ fetch('https://raw.githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.jso
             }
           });
         }
-
-        const parsed = raw.reduce((acc, item) => {
+        const parsed = [];
+        for (const item of raw) {
           const lvls = item.l || item.level || Array.of();
           const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n));
-          if (!newLvl) return acc;
+          if (!newLvl) continue;
           const forms = item.f || item.forms || Array.of();
           const form = forms.at(0) || {};
-          const trans = form.i || form.transcriptions || {};
+          const trans = form.i || form.t || form.transcriptions || {};
+          const pinyin = trans.pinyin || form.p || '';
           const meanings = form.m || form.meanings || Array.of();
           const hanzi = item.s || item.simplified;
-          const ru = ruMap.get(hanzi) || meanings.slice(0, 3).join(', ');
-          if (hanzi && ru) acc.push({ id: 'hsk_' + (acc.length + 1), hanzi, pinyin: trans.pinyin || '', ru, level: newLvl });
-          return acc;
-        }, Array.of());
-
+          let ru = ruMap.get(hanzi);
+          if (!ru && meanings.length) {
+            const en = meanings.slice(0, 2).join(', ');
+            try {
+const tr = await fetch('https://api.mymemory.' + 'translated.net/get?q=' + encodeURIComponent(en) + '&langpair=en|ru').then(r => r.json());
+              ru = (tr && tr.responseData && tr.responseData.translatedText) || en;
+            } catch {
+              ru = en;
+            }
+            st.textContent = 'Перевод новых слов: ' + parsed.length + '...';
+          }
+          if (hanzi && ru) parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
+        }
         saveVocab(parsed);
         st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
     } catch (e) {
