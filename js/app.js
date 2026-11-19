@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard } from './screens/card.js?v=27';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
-const VOCAB_KEY = 'hsk_vocab_v7';
+const VOCAB_KEY = 'hsk_vocab_v8';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -280,22 +280,17 @@ function stats() {
         const form = forms.at(0) || {};
         const hanzi = item.s || item.simplified;
         const found = ruMap.get(hanzi);
-        const tr0 = Array.isArray(form.i) ? form.i.at(0) : (form.i || form.t || {});
-        const pinyin = (typeof tr0 === 'string' ? tr0 : tr0.pinyin) || (found && found.pinyin) || '';
+        const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
+        const rawT = Array.isArray(form.t) ? form.t.at(0) : form.t;
+        const pinyin =
+          (typeof rawI === 'string' ? rawI : (rawI && (rawI.pinyin || rawI.p))) ||
+          (typeof rawT === 'string' ? rawT : (rawT && (rawT.pinyin || rawT.p))) ||
+          form.p ||
+          (found && found.pinyin) ||
+          '';
         const meanings = form.m || form.meanings || Array.of();
-        let ru = found ? found.ru : '';
-        if (!ru && meanings.length) {
-          const en = meanings.slice(0, 2).join(', ');
-          try {
-            const trUrl = 'https://api.mymemory.' + 'translated.net/get?q=' + encodeURIComponent(en) + '&langpair=en|ru';
-            const tr = await fetch(trUrl).then(r => r.json());
-            ru = (tr && tr.responseData && tr.responseData.translatedText) || en;
-          } catch {
-            ru = en;
-          }
-          st.textContent = 'Перевод новых слов: ' + parsed.length + '...';
-        }
-        if (hanzi && ru) {
+        const ru = found ? found.ru : meanings.slice(0, 2).join(', ');
+        if (hanzi && ru && !ru.includes('MYMEMORY')) {
           parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
         }
       }
