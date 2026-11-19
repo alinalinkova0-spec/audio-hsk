@@ -47,11 +47,16 @@ export function renderCard(root, word, srsState, onDone) {
     done = true;
     const ok = o.id === word.id;
     btn.classList.add(ok ? 'ok' : 'bad');
-    if (!ok) [...answersEl.children].forEach(b => {
+        if (!ok) [...answerEl.children].forEach(b => {
       if (b.textContent === word.hanzi) b.classList.add('ok');
     });
+    speak(o.hanzi);
     reveal.hidden = false;
-    reveal.querySelector('#hanzi').textContent = word.hanzi;
+    reveal.querySelector('#hanzi').innerHTML = `
+  <div>${word.hanzi}</div>
+  ${word.pinyin ? `<div style="font-size: 20px; color: #94a3b8; margin-top: 6px; font-weight: 400;">${word.pinyin}</div>` : ''}
+  ${word.ru ? `<div style="font-size: 18px; color: #e2e8f0; margin-top: 6px; font-weight: 400;">${word.ru}</div>` : ''}
+`;
     reveal.querySelector('#again').onclick = () => speak(word.hanzi);
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
