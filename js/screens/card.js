@@ -1,5 +1,5 @@
 import { speak } from '../audio.js';
-import { review } from '../srs.js';
+import { review, saveSRS } from '../srs.js';
 
 export function renderCard(root, word, srsState, onDone) {
   const all = window.__ALL_WORDS || [];
@@ -25,7 +25,8 @@ export function renderCard(root, word, srsState, onDone) {
       </div>
     </div>`;
 
-  const opts = shuffle([word, ...shuffle(all.filter(w => w.id !== word.id)).slice(0, 3)]);
+  const pool = all.length >= 4 ? all : [...all, { id:'x1', ru:'другой вариант' }, { id:'x2', ru:'неизвестно' }, { id:'x3', ru:'пропустить' }];
+  const opts = shuffle([word, ...shuffle(pool.filter(w => w.id !== word.id)).slice(0, 3)]);
   const answersEl = root.querySelector('#answers');
   opts.forEach(o => {
     const b = document.createElement('button');
@@ -55,10 +56,15 @@ export function renderCard(root, word, srsState, onDone) {
     reveal.querySelector('#ru').textContent = word.ru;
     reveal.querySelector('#again').onclick = () => speak(word.hanzi);
     reveal.querySelectorAll('[data-grade]').forEach(g => {
-      g.onclick = () => { review(srsState, word.id, +g.dataset.grade); onDone(); };
+      g.onclick = () => {
+        review(srsState, word.id, +g.dataset.grade);
+        saveSRS(srsState);
+        onDone();
+      };
     });
   }
 }
+
 function shuffle(a) {
-  return a.map(v => [Math.random(), v]).sort((x,y)=>x[0]-y[0]).map(v=>v[1]);
+  return a.map(v => [Math.random(), v]).sort((x, y) => x - y).map(v => v);
 }
