@@ -177,9 +177,7 @@ const tr = await fetch('https://api.mymemory.' + 'translated.net/get?q=' + encod
       if (hanzi && ru) {
         parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
       }
-    }
-          if (hanzi && ru) parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
-        }
+    
         saveVocab(parsed);
         st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
     } catch (e) {
