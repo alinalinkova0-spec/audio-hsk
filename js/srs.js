@@ -1,39 +1,25 @@
-const CACHE = 'hsk4-offline-v3';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.json',
-  './css/style.css',
-  './js/app.js',
-  './js/audio.js',
-  './js/data.js',
-  './js/srs.js',
-  './js/screens/card.js',
-  './js/screens/segment.js'
-];
+const KEY = 'srs_hsk4_v1';
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', e => {
-  e.respondWith(
-    fetch(e.request)
-      .then(res => {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copy));
-        return res;
-      })
-      .catch(() => caches.match(e.request))
-  );
-});
+export function loadSRS() {
+  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+  catch { return {}; }
+}
+export function saveSRS(s) {
+  localStorage.setItem(KEY, JSON.stringify(s));
+}
+export function review(state, id, grade) {
+  const s = state[id] || { ef: 2.5, interval: 0, reps: 0, due: 0 };
+  if (grade === 0) { s.reps = 0; s.interval = 1; }
+  else {
+    s.reps += 1;
+    s.ef = Math.max(1.3, s.ef + (0.1 - (3 - grade) * 0.08));
+    s.interval = s.reps === 1 ? 1 : s.reps === 2 ? 3 : Math.round(s.interval * s.ef);
+  }
+  s.due = Date.now() + s.interval * 86400000;
+  state[id] = s;
+  return state;
+}
+export function dueItems(state, allIds) {
+  const now = Date.now();
+  return allIds.filter(id => !state[id] || state[id].due <= now);
+}
