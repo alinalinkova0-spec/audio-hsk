@@ -1,11 +1,31 @@
-import { words, sentences } from './data.js';
+import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard } from './screens/card.js';
 import { renderSegment } from './screens/segment.js';
 
-window.__ALL_WORDS = words;
+const VOCAB_KEY = 'hsk_vocab_v1';
+let allWords = loadVocab();
+window.__ALL_WORDS = allWords;
+
+let selectedLevel = 'all';
+let selectedLesson = 0;
+
 const app = document.getElementById('app');
 const srs = loadSRS();
+
+function loadVocab() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(VOCAB_KEY));
+    if (Array.isArray(saved) && saved.length) return saved;
+  } catch {}
+  return defaultWords.map(w => ({ ...w, level: 4 }));
+}
+
+function saveVocab(list) {
+  allWords = list;
+  window.__ALL_WORDS = list;
+  localStorage.setItem(VOCAB_KEY, JSON.stringify(list));
+}
 
 window.addEventListener('hashchange', router);
 router();
@@ -17,30 +37,70 @@ function router() {
   else home();
 }
 
+function getFilteredWords() {
+  return selectedLevel === 'all'
+    ? allWords
+    : allWords.filter(w => String(w.level) === String(selectedLevel));
+}
+
 function home() {
+  const filtered = getFilteredWords();
+  const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
+  if (selectedLesson >= lessonCount) selectedLesson = 0;
+
+  const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
+    const from = idx * 50 + 1;
+    const to = Math.min((idx + 1) * 50, filtered.length);
+    return `<option value="${idx}" ${idx === selectedLesson ? 'selected' : ''}>Урок ${idx + 1} (${from}–${to})</option>`;
+  }).join('');
+
   app.innerHTML = `
     <section class="hero">
-      <h1>听 HSK 4 — аудирование</h1>
-      <p>Сначала звук. Текст — после ответа.</p>
+      <h1>听 HSK 1–4 — аудирование</h1>
+      <p>В офлайн-памяти: <b>${allWords.length}</b> слов</p>
+      <div class="controls">
+        <select id="lvlSel">
+          <option value="all" ${selectedLevel === 'all' ? 'selected' : ''}>Все уровни HSK 1–4</option>
+          <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1</option>
+          <option value="2" ${selectedLevel === '2' ? 'selected' : ''}>HSK 2</option>
+          <option value="3" ${selectedLevel === '3' ? 'selected' : ''}>HSK 3</option>
+          <option value="4" ${selectedLevel === '4' ? 'selected' : ''}>HSK 4</option>
+        </select>
+        <select id="lesSel">${lessonOptions}</select>
+      </div>
       <a class="cta" href="#/session">Начать сессию</a>
     </section>`;
+
+  app.querySelector('#lvlSel').onchange = e => {
+    selectedLevel = e.target.value;
+    selectedLesson = 0;
+    home();
+  };
+  app.querySelector('#lesSel').onchange = e => {
+    selectedLesson = +e.target.value;
+  };
 }
 
 function session() {
-  const due = dueItems(srs, words.map(w => w.id));
-  const ids = due.length ? due : words.map(w => w.id).slice(0, 10);
-  const queue = ids.map(id => words.find(w => w.id === id)).filter(Boolean);
+  const filtered = getFilteredWords();
+  const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
+  const due = dueItems(srs, slice.map(w => w.id));
+  const ids = (due.length ? due : slice.map(w => w.id)).slice(0, 15);
+  const queue = ids.map(id => slice.find(w => w.id === id)).filter(Boolean);
+
   const steps = [
     ...queue.map(w => ({ type: 'card', word: w })),
     ...sentences.slice(0, 3).map(s => ({ type: 'segment', sentence: s })),
   ];
+
   let i = 0;
   function next() {
     if (i >= steps.length) {
       saveSRS(srs);
       app.innerHTML = `<section class="hero"><h1>Готово!</h1>
-        <p>Слов: ${queue.length}. Фраз: 3.</p>
-        <a class="cta" href="#/session">Ещё раз</a></section>`;
+        <p>Пройдено слов: ${queue.length}. Фраз: 3.</p>
+        <button id="againBtn" class="cta" style="border:none;cursor:pointer;">Ещё раз</button></section>`;
+      app.querySelector('#againBtn').onclick = session;
       return;
     }
     const st = steps[i++];
@@ -53,8 +113,68 @@ function session() {
 function stats() {
   const total = Object.keys(srs).length;
   const learned = Object.values(srs).filter(s => s.reps >= 3).length;
-  app.innerHTML = `<section><h2>Статистика</h2>
-    <p>Слов в базе: ${words.length}</p>
-    <p>В повторении: ${total}</p>
-    <p>Уверенно на слух: ${learned}</p></section>`;
+  app.innerHTML = `<section>
+    <h2>Статистика и офлайн-база</h2>
+    <p>Слов в базе устройства: <b>${allWords.length}</b></p>
+    <p>В повторении: <b>${total}</b></p>
+    <p>Уверенно на слух: <b>${learned}</b></p>
+
+    <div class="box">
+      <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
+      <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки все слова сохранятся локально и будут работать без сети.</p>
+      <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Загрузить HSK 1–4</button>
+      <p id="fetchStatus" style="margin-top:10px;color:var(--accent);"></p>
+    </div>
+
+    <div class="box">
+      <h3>2. Загрузить свой словарь с русским переводом (.txt / .csv)</h3>
+      <p style="color:var(--muted);font-size:14px;">Формат строк: <code>иероглиф;пиньинь;перевод;уровень</code> (например: <code>影响;yǐngxiǎng;влиять;4</code>)</p>
+      <input type="file" id="csvFile" accept=".txt,.csv" style="margin-top:8px;">
+    </div>
+  </section>`;
+
+  app.querySelector('#fetchHsk').onclick = async () => {
+    const st = app.querySelector('#fetchStatus');
+    st.textContent = 'Загрузка базы HSK 3.0...';
+    try {
+      const res = await fetch('https://githubusercontent.com');
+      const data = await res.json();
+      const parsed = [];
+      let idx = 1;
+      for (const item of data) {
+        const lvls = item.level || [];
+        const newLvl = [1, 2, 3, 4].find(n => lvls.includes(`new-${n}`));
+        if (!newLvl) continue;
+        const form = (item.forms && item.forms[0]) || {};
+        const pinyin = (form.transcriptions && form.transcriptions.pinyin) || '';
+        const ru = (form.meanings || []).slice(0, 3).join(', ');
+        if (item.simplified && ru) {
+          parsed.push({ id: `hsk_${idx++}`, hanzi: item.simplified, pinyin, ru, level: newLvl });
+        }
+      }
+      saveVocab(parsed);
+      st.textContent = `Готово! Сохранено ${parsed.length} слов HSK 1–4 в память устройства.`;
+    } catch (e) {
+      st.textContent = 'Ошибка загрузки. Проверьте подключение к интернету.';
+    }
+  };
+
+  app.querySelector('#csvFile').onchange = e => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
+      const custom = lines.map((line, idx) => {
+        const [hanzi, pinyin = '', ru = '', lvl = '4'] = line.split(/[;\t]/);
+        return { id: `c_${idx + 1}`, hanzi: hanzi?.trim(), pinyin: pinyin.trim(), ru: ru.trim(), level: Number(lvl) || 4 };
+      }).filter(w => w.hanzi && w.ru);
+      if (custom.length) {
+        saveVocab(custom);
+        alert(`Загружено ${custom.length} слов в офлайн-память!`);
+        stats();
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  };
 }
