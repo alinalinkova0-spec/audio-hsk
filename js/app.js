@@ -159,19 +159,51 @@ function stats() {
     }
   };
 
+   app.querySelector('#fetchHsk').onclick = async () => {
+    const st = app.querySelector('#fetchStatus');
+    st.textContent = 'Загрузка базы HSK 3.0...';
+    try {
+      const res = await fetch('https://jsdelivr.net');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      const parsed = Array.of();
+      let idx = 1;
+      const targetLevels = Array.of(1, 2, 3, 4);
+      for (const item of data) {
+        const lvls = item.level || Array.of();
+        const newLvl = targetLevels.find(n => lvls.includes('new-' + n));
+        if (!newLvl) continue;
+        const form = (item.forms && item.forms.at(0)) || {};
+        const pinyin = (form.transcriptions && form.transcriptions.pinyin) || '';
+        const ru = (form.meanings || Array.of()).slice(0, 3).join(', ');
+        if (item.simplified && ru) {
+          parsed.push({ id: 'hsk_' + (idx++), hanzi: item.simplified, pinyin, ru, level: newLvl });
+        }
+      }
+      saveVocab(parsed);
+      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов HSK 1–4 в память устройства.';
+    } catch (e) {
+      st.textContent = 'Ошибка загрузки: ' + e.message;
+    }
+  };
+
   app.querySelector('#csvFile').onchange = e => {
-    const file = e.target.files && e.target.files[0];
+    const file = e.target.files && e.target.files.item(0);
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
       const custom = lines.map((line, idx) => {
-        const [hanzi, pinyin = '', ru = '', lvl = '4'] = line.split(/[;\t]/);
-        return { id: `c_${idx + 1}`, hanzi: hanzi?.trim(), pinyin: pinyin.trim(), ru: ru.trim(), level: Number(lvl) || 4 };
+        const parts = line.split(/[;\t]/);
+        const hanzi = (parts.at(0) || '').trim();
+        const pinyin = (parts.at(1) || '').trim();
+        const ru = (parts.at(2) || '').trim();
+        const lvl = Number(parts.at(3)) || 4;
+        return { id: 'c_' + (idx + 1), hanzi, pinyin, ru, level: lvl };
       }).filter(w => w.hanzi && w.ru);
       if (custom.length) {
         saveVocab(custom);
-        alert(`Загружено ${custom.length} слов в офлайн-память!`);
+        alert('Загружено ' + custom.length + ' слов в офлайн-память!');
         stats();
       }
     };
