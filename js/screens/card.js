@@ -162,7 +162,13 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   const rate = +(0.95 + Math.random() * 0.15).toFixed(2);
   const LIMIT_MS = 3500;
 
-  const others = shuffle(all.filter(w => w.id !== word.id && w.ru && w.ru !== word.ru)).slice(0, 3);
+  const mainRu = str => String(str || '').split(/[,;/]/).at(0).trim();
+  const isRu = str => /[а-яё]/i.test(str) && !String(str).includes('MYMEMORY');
+
+  const validPool = all.filter(
+    w => w.id !== word.id && isRu(w.ru) && mainRu(w.ru) && mainRu(w.ru) !== mainRu(word.ru)
+  );
+  const others = shuffle(validPool).slice(0, 3);
   const opts = shuffle([word, ...others]);
 
   root.innerHTML = `
@@ -192,7 +198,7 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     b.className = 'answer';
     b.style.fontSize = '17px';
     b.style.padding = '13px';
-    b.textContent = o.ru;
+    b.textContent = mainRu(o.ru);
     b.onclick = () => finish(o.id === word.id, b, false);
     answerEl.appendChild(b);
   });
@@ -212,7 +218,7 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     if (btn) btn.classList.add(ok ? 'ok' : 'bad');
     if (!ok) {
       [...answerEl.children].forEach(b => {
-        if (b.textContent === word.ru) b.classList.add('ok');
+        if (b.textContent === mainRu(word.ru)) b.classList.add('ok');
       });
     }
     infoEl.innerHTML = `${timeout ? '<span style="color:#f87171;">Время вышло! </span>' : ''}<b>${word.hanzi}</b> (${word.pinyin}) — ${word.ru}`;
