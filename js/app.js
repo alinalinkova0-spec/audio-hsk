@@ -142,14 +142,18 @@ const res = await fetch('./hsk.json');
       const parsed = [];
       let idx = 1;
       for (const item of data) {
-        const lvls = item.level || [];
-     const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n) || lvls.includes('new-' + n) || lvls.includes(String(n)));
+        const lvls = item.l || item.level || Array.of();
+        const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n) || lvls.includes('new-' + n));
         if (!newLvl) continue;
-        const form = (item.forms && item.forms[0]) || {};
-        const pinyin = (form.transcriptions && form.transcriptions.pinyin) || '';
-        const ru = (form.meanings || []).slice(0, 3).join(', ');
-        if (item.simplified && ru) {
-          parsed.push({ id: `hsk_${idx++}`, hanzi: item.simplified, pinyin, ru, level: newLvl });
+        const forms = item.f || item.forms || Array.of();
+        const form = forms.at(0) || {};
+        const trans = form.i || form.transcriptions || {};
+        const pinyin = trans.y || trans.pinyin || '';
+        const meanings = form.m || form.meanings || Array.of();
+        const ru = meanings.slice(0, 3).join(', ');
+        const hanzi = item.s || item.simplified;
+        if (hanzi && ru) {
+          parsed.push({ id: 'hsk_' + (idx++), hanzi, pinyin, ru, level: newLvl });
         }
       }
       saveVocab(parsed);
