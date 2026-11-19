@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard } from './screens/card.js?v=21';
 import { renderSegment } from './screens/segment.js';
 
-const VOCAB_KEY = 'hsk_vocab_v4';
+const VOCAB_KEY = 'hsk_vocab_v5';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -154,8 +154,12 @@ function stats() {
         const ruList = await resRu.json();
         ruList.forEach(w => {
           if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
-            ruMap.set(w.hanzi, w.translations.rus.slice(0, 3).join(', '));
+            ruMap.set(w.hanzi, {
+              ru: w.translations.rus.slice(0, 3).join(', '),
+              pinyin: w.pinyin || ''
+            });
           }
+
         });
       }
 
@@ -166,11 +170,12 @@ function stats() {
         if (!newLvl) continue;
         const forms = item.f || item.forms || [];
         const form = forms[0] || {};
-        const trans = form.i || form.t || form.transcriptions || {};
-        const pinyin = trans.pinyin || form.p || '';
-        const meanings = form.m || form.meanings || [];
-        const hanzi = item.s || item.simplified;
-        let ru = ruMap.get(hanzi);
+                const hanzi = item.s || item.simplified;
+        const found = ruMap.get(hanzi);
+        const tr0 = Array.isArray(form.i) ? form.i.at(0) : (form.i || form.t || {});
+        const pinyin = (typeof tr0 === 'string' ? tr0 : tr0.pinyin) || (found && found.pinyin) || '';
+        const meanings = form.m || form.meanings || Array.of();
+        let ru = found ? found.ru : '';
         if (!ru && meanings.length) {
           const en = meanings.slice(0, 2).join(', ');
           try {
