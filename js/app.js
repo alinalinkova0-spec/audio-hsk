@@ -7,8 +7,8 @@ const VOCAB_KEY = 'hsk_vocab_v2';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
-let selectedLevel = 'all';
-let selectedLesson = 0;
+let selectedLevel = localStorage.getItem('hsk_lvl') || 'all';
+let selectedLesson = +(localStorage.getItem('hsk_les') || 0);
 
 const app = document.getElementById('app');
 const srs = loadSRS();
@@ -74,10 +74,13 @@ function home() {
   app.querySelector('#lvlSel').onchange = e => {
     selectedLevel = e.target.value;
     selectedLesson = 0;
+    localStorage.setItem('hsk_lvl', selectedLevel);
+    localStorage.setItem('hsk_les', '0');
     home();
   };
   app.querySelector('#lesSel').onchange = e => {
     selectedLesson = +e.target.value;
+    localStorage.setItem('hsk_les', String(selectedLesson));
   };
 }
 
@@ -171,10 +174,10 @@ fetch('https://raw.githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.jso
 const tr = await fetch('https://api.mymemory.' + 'translated.net/get?q=' + encodeURIComponent(en) + '&langpair=en|ru').then(r => r.json());
               ru = (tr && tr.responseData && tr.responseData.translatedText) || en;
             } catch {
-              ru = en;
-            }
-            st.textContent = 'Перевод новых слов: ' + parsed.length + '...';
-          }
+      if (hanzi && ru) {
+        parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
+      }
+    }
           if (hanzi && ru) parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
         }
         saveVocab(parsed);
