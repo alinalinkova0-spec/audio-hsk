@@ -208,11 +208,14 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     speak(word.hanzi, { rate });
     requestAnimationFrame(() => { bar.style.width = '0%'; });
   }, 150);
-
-  const timer = setTimeout(() => finish(false, null, true), LIMIT_MS + 150);
+  const timer = setTimeout(() => {
+    if (!document.body.contains(answerEl)) return;
+    finish(false, null, true);
+  }, LIMIT_MS + 150);
 
   function finish(ok, btn, timeout) {
-    if (done) return;
+    if (done || !document.body.contains(answerEl)) return;
+    
     done = true;
     clearTimeout(timer);
     if (btn) btn.classList.add(ok ? 'ok' : 'bad');
