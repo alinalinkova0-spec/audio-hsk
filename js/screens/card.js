@@ -66,5 +66,5 @@ export function renderCard(root, word, srsState, onDone) {
 }
 
 function shuffle(a) {
-  return a.map(v => [Math.random(), v]).sort((x, y) => x - y).map(v => v);
+  return a.map(v => ({ r: Math.random(), v })).sort((x, y) => x.r - y.r).map(x => x.v);
 }
