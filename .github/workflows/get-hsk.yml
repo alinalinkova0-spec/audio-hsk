@@ -1,0 +1,24 @@
+name: Download HSK
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch HSK JSON
+        run: |
+          gh repo clone drkameleon/complete-hsk-vocabulary tmp -- --depth=1
+          cp tmp/complete.min.json hsk.json
+          rm -rf tmp
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit file
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add hsk.json
+          git commit -m "Add hsk.json"
+          git push
