@@ -39,3 +39,22 @@ main { max-width:640px; margin:0 auto; padding:24px 16px; }
 .gap { width:10px; height:40px; cursor:pointer; border-radius:3px;
   background:#23262e; margin:0 2px; }
 .gap.active { background:var(--accent); }
+.controls { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin:20px 0; }
+.controls select { padding:10px 14px; border-radius:10px; border:1px solid #2c303a;
+  background:#232730; color:var(--fg); font-size:15px; }
+.gap.ok { background:var(--ok); }
+.gap.bad { background:var(--bad); }
+.gap.missed { border:2px dashed var(--ok); background:transparent; }
+.box { margin-top:24px; padding:16px; background:var(--card); border-radius:14px; text-align:left; }
+
+@media (max-width: 600px) {
+  main { padding: 16px 12px; }
+  .card { padding: 18px 14px; }
+  .hanzi { font-size: 36px; }
+  .ch { font-size: 28px; }
+  .gap { width: 18px; height: 44px; margin: 0 3px; }
+  .answer { padding: 16px 14px; font-size: 16px; }
+  .grades { flex-wrap: wrap; }
+  .grades button { flex: 1 1 45%; padding: 12px; }
+  .controls select, .cta { width: 100%; text-align: center; }
+}
