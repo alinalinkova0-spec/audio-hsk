@@ -1,0 +1,41 @@
+:root {
+  --bg:#0f1115; --card:#1a1d24; --fg:#e8e8ea; --muted:#8a8f98;
+  --accent:#6ea8fe; --ok:#3ddc97; --bad:#ff6b6b;
+}
+* { box-sizing: border-box; }
+body { margin:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--fg); }
+.topbar { display:flex; justify-content:space-between; align-items:center;
+  padding:12px 20px; border-bottom:1px solid #23262e; }
+.logo { font-weight:700; text-decoration:none; color:var(--fg); }
+nav a { color:var(--muted); text-decoration:none; margin-left:16px; }
+nav a:hover { color:var(--fg); }
+main { max-width:640px; margin:0 auto; padding:24px 16px; }
+.hero { text-align:center; padding:60px 0; }
+.hero h1 { font-size:28px; }
+.cta { display:inline-block; margin-top:20px; padding:12px 24px;
+  background:var(--accent); color:#0b1020; border-radius:12px;
+  text-decoration:none; font-weight:600; }
+.card { background:var(--card); border-radius:16px; padding:24px; }
+.card-audio { display:flex; gap:12px; justify-content:center; margin-bottom:12px; }
+.big-play { width:88px; height:88px; border-radius:50%; border:none;
+  background:var(--accent); color:#0b1020; font-size:28px; cursor:pointer; }
+.ghost { background:transparent; color:var(--muted);
+  border:1px solid #2c303a; border-radius:10px; padding:8px 12px; cursor:pointer; }
+.prompt { text-align:center; color:var(--muted); }
+.answers { display:grid; gap:10px; margin:16px 0; }
+.answer { padding:14px; background:#232730; color:var(--fg);
+  border:1px solid #2c303a; border-radius:12px; cursor:pointer; text-align:left; }
+.answer.ok { border-color:var(--ok); color:var(--ok); }
+.answer.bad { border-color:var(--bad); color:var(--bad); }
+.reveal { margin-top:20px; text-align:center; }
+.hanzi { font-size:44px; letter-spacing:4px; }
+.pinyin { color:var(--accent); margin:6px 0; }
+.grades { display:flex; gap:8px; justify-content:center; margin-top:16px; }
+.grades button { padding:10px 14px; border-radius:10px; border:1px solid #2c303a;
+  background:#232730; color:var(--fg); cursor:pointer; }
+.charbar { display:flex; flex-wrap:wrap; align-items:center; margin:20px 0; }
+.ch { font-size:32px; padding:4px 2px; }
+.gap { width:10px; height:40px; cursor:pointer; border-radius:3px;
+  background:#23262e; margin:0 2px; }
+.gap.active { background:var(--accent); }
