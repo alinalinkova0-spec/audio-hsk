@@ -1,6 +1,6 @@
 import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=27';
+import { renderCard, renderBlitzCard } from './screens/card.js?v=28';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
 const VOCAB_KEY = 'hsk_vocab_v10';
@@ -154,12 +154,15 @@ function home() {
     selectedLesson = 0;
     localStorage.setItem('hsk_lvl', selectedLevel);
     localStorage.setItem('hsk_les', '0');
+    history.replaceState(null, '', '#/');
     home();
   };
   app.querySelector('#lesSel').onchange = e => {
     selectedLesson = +e.target.value;
     localStorage.setItem('hsk_les', String(selectedLesson));
+    history.replaceState(null, '', '#/');
   };
+  
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
       location.hash = '#/' + btn.dataset.mode;
