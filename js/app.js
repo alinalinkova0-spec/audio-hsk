@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard } from './screens/card.js?v=21';
 import { renderSegment } from './screens/segment.js';
 
-const VOCAB_KEY = 'hsk_vocab_v2';
+const VOCAB_KEY = 'hsk_vocab_v4';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -51,7 +51,8 @@ function home() {
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
     const from = idx * 50 + 1;
     const to = Math.min((idx + 1) * 50, filtered.length);
-    return '<option value="' + idx + '" ' + (idx === selectedLesson ? 'selected' : '') + '>Урок ' + (idx + 1) + ' (' + from + '–' + to + ')</option>';
+    const sel = idx === selectedLesson ? 'selected' : '';
+    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
   }).join('');
 
   app.innerHTML = `
@@ -60,7 +61,7 @@ function home() {
       <p>В офлайн-памяти: <b>${allWords.length}</b> слов</p>
       <div class="controls">
         <select id="lvlSel">
-          <option value="all" ${selectedLevel === 'all' ? 'selected' : ''}>Все уровни HSK 1–4</option>
+          <option value="all" ${selectedLevel === 'all' ? 'selected' : ''}>Все уровни</option>
           <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1</option>
           <option value="2" ${selectedLevel === '2' ? 'selected' : ''}>HSK 2</option>
           <option value="3" ${selectedLevel === '3' ? 'selected' : ''}>HSK 3</option>
@@ -124,8 +125,8 @@ function stats() {
 
     <div class="box">
       <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
-      <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки все слова сохранятся локально и будут работать без сети.</p>
-      <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Загрузить HSK 1–4</button>
+      <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки словарь сохранится в браузере и будет работать офлайн.</p>
+      <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Скачать словарь</button>
       <p id="fetchStatus" style="margin-top:10px;color:var(--accent);"></p>
     </div>
 
@@ -140,63 +141,71 @@ function stats() {
     const st = app.querySelector('#fetchStatus');
     st.textContent = 'Загрузка базы HSK 1–4...';
     try {
-        const [resNew, resRu] = await Promise.all([
-          fetch('./hsk.json?v=2'),
-fetch('https://raw.githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.json').catch(() => null)
-        ]);
-        if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
-        const raw = await resNew.json();
+      const ruUrl = 'https://raw.githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.json';
+      const [resNew, resRu] = await Promise.all([
+        fetch('./hsk.json?v=3'),
+        fetch(ruUrl).catch(() => null)
+      ]);
+      if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
+      const raw = await resNew.json();
 
-        const ruMap = new Map();
-        if (resRu && resRu.ok) {
-          const ruList = await resRu.json();
-          ruList.forEach(w => {
-            if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
-              ruMap.set(w.hanzi, w.translations.rus.slice(0, 3).join(', '));
-            }
-          });
-        }
-        const parsed = [];
-        for (const item of raw) {
-          const lvls = item.l || item.level || Array.of();
-          const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n));
-          if (!newLvl) continue;
-          const forms = item.f || item.forms || Array.of();
-          const form = forms.at(0) || {};
-          const trans = form.i || form.t || form.transcriptions || {};
-          const pinyin = trans.pinyin || form.p || '';
-          const meanings = form.m || form.meanings || Array.of();
-          const hanzi = item.s || item.simplified;
-          let ru = ruMap.get(hanzi);
-          if (!ru && meanings.length) {
-            const en = meanings.slice(0, 2).join(', ');
-            try {
-const tr = await fetch('https://api.mymemory.' + 'translated.net/get?q=' + encodeURIComponent(en) + '&langpair=en|ru').then(r => r.json());
-              ru = (tr && tr.responseData && tr.responseData.translatedText) || en;
-            } catch {
-      if (hanzi && ru) {
-        parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
+      const ruMap = new Map();
+      if (resRu && resRu.ok) {
+        const ruList = await resRu.json();
+        ruList.forEach(w => {
+          if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
+            ruMap.set(w.hanzi, w.translations.rus.slice(0, 3).join(', '));
+          }
+        });
       }
-    }
-        saveVocab(parsed);
-        st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
+
+      const parsed = [];
+      for (const item of raw) {
+        const lvls = item.l || item.level || [];
+        const newLvl = [1, 2, 3, 4].find(n => lvls.includes('n' + n));
+        if (!newLvl) continue;
+        const forms = item.f || item.forms || [];
+        const form = forms[0] || {};
+        const trans = form.i || form.t || form.transcriptions || {};
+        const pinyin = trans.pinyin || form.p || '';
+        const meanings = form.m || form.meanings || [];
+        const hanzi = item.s || item.simplified;
+        let ru = ruMap.get(hanzi);
+        if (!ru && meanings.length) {
+          const en = meanings.slice(0, 2).join(', ');
+          try {
+            const trUrl = 'https://api.mymemory.' + 'translated.net/get?q=' + encodeURIComponent(en) + '&langpair=en|ru';
+            const tr = await fetch(trUrl).then(r => r.json());
+            ru = (tr && tr.responseData && tr.responseData.translatedText) || en;
+          } catch {
+            ru = en;
+          }
+          st.textContent = 'Перевод новых слов: ' + parsed.length + '...';
+        }
+        if (hanzi && ru) {
+          parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
+        }
+      }
+
+      saveVocab(parsed);
+      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
     } catch (e) {
       st.textContent = 'Ошибка: ' + e.message;
     }
   };
 
   app.querySelector('#csvFile').onchange = e => {
-    const file = e.target.files && e.target.files.item(0);
+    const file = e.target.files && e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
       const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
       const custom = lines.map((line, idx) => {
         const parts = line.split(/[;\t]/);
-        const hanzi = (parts.at(0) || '').trim();
-        const pinyin = (parts.at(1) || '').trim();
-        const ru = (parts.at(2) || '').trim();
-        const lvl = Number(parts.at(3)) || 4;
+        const hanzi = (parts[0] || '').trim();
+        const pinyin = (parts[1] || '').trim();
+        const ru = (parts[2] || '').trim();
+        const lvl = Number(parts[3]) || 4;
         return { id: 'c_' + (idx + 1), hanzi, pinyin, ru, level: lvl };
       }).filter(w => w.hanzi && w.ru);
       if (custom.length) {
@@ -207,4 +216,4 @@ const tr = await fetch('https://api.mymemory.' + 'translated.net/get?q=' + encod
     };
     reader.readAsText(file, 'utf-8');
   };
-}
+    }
