@@ -1,4 +1,4 @@
-const CACHE = 'hsk4-offline-v2';
+const CACHE = 'hsk4-offline-v3';
 const ASSETS = [
   './',
   './index.html',
