@@ -139,7 +139,7 @@ function stats() {
     try {
         const [resNew, resRu] = await Promise.all([
           fetch('./hsk.json?v=2'),
-fetch('https://githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.json').catch(() => null)
+fetch('https://raw.githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.json').catch(() => null)
         ]);
         if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
         const raw = await resNew.json();
