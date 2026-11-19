@@ -137,7 +137,7 @@ function stats() {
     const st = app.querySelector('#fetchStatus');
     st.textContent = 'Загрузка базы HSK 3.0...';
     try {
-      const res = await fetch('https://githubusercontent.com');
+const res = await fetch('./hsk.json');
       const data = await res.json();
       const parsed = [];
       let idx = 1;
@@ -158,35 +158,6 @@ function stats() {
       st.textContent = 'Ошибка загрузки. Проверьте подключение к интернету.';
     }
   };
-
-   app.querySelector('#fetchHsk').onclick = async () => {
-    const st = app.querySelector('#fetchStatus');
-    st.textContent = 'Загрузка базы HSK 3.0...';
-    try {
-      const res = await fetch('https://jsdelivr.net');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      const parsed = Array.of();
-      let idx = 1;
-      const targetLevels = Array.of(1, 2, 3, 4);
-      for (const item of data) {
-        const lvls = item.level || Array.of();
-        const newLvl = targetLevels.find(n => lvls.includes('new-' + n));
-        if (!newLvl) continue;
-        const form = (item.forms && item.forms.at(0)) || {};
-        const pinyin = (form.transcriptions && form.transcriptions.pinyin) || '';
-        const ru = (form.meanings || Array.of()).slice(0, 3).join(', ');
-        if (item.simplified && ru) {
-          parsed.push({ id: 'hsk_' + (idx++), hanzi: item.simplified, pinyin, ru, level: newLvl });
-        }
-      }
-      saveVocab(parsed);
-      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов HSK 1–4 в память устройства.';
-    } catch (e) {
-      st.textContent = 'Ошибка загрузки: ' + e.message;
-    }
-  };
-
   app.querySelector('#csvFile').onchange = e => {
     const file = e.target.files && e.target.files.item(0);
     if (!file) return;
