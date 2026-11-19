@@ -137,26 +137,40 @@ function stats() {
     const st = app.querySelector('#fetchStatus');
     st.textContent = 'Загрузка базы HSK 1–4...';
     try {
-const res = await fetch('./hsk.json?v=2');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const raw = await res.json();
-      const parsed = Array.isArray(raw) && raw.at(0) && raw.at(0).ru
-        ? raw
-        : raw.reduce((acc, item) => {
-            const lvls = item.l || item.level || Array.of();
-            const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n) || lvls.includes('new-' + n));
-            if (!newLvl) return acc;
-            const forms = item.f || item.forms || Array.of();
-            const form = forms.at(0) || {};
-            const trans = form.i || form.transcriptions || {};
-            const meanings = form.m || form.meanings || Array.of();
-            const ru = meanings.slice(0, 3).join(', ');
-            const hanzi = item.s || item.simplified;
-            if (hanzi && ru) acc.push({ id: 'hsk_' + (acc.length + 1), hanzi, pinyin: trans.y || trans.pinyin || '', ru, level: newLvl });
-            return acc;
-          }, Array.of());
-      saveVocab(parsed);
-      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов HSK 1–4 в память устройства.';
+        const [resNew, resRu] = await Promise.all([
+          fetch('./hsk.json?v=2'),
+          fetch('https://githubusercontent.com').catch(() => null)
+        ]);
+        if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
+        const raw = await resNew.json();
+
+        const ruMap = new Map();
+        if (resRu && resRu.ok) {
+          const ruList = await resRu.json();
+          ruList.forEach(w => {
+            if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
+              ruMap.set(w.hanzi, w.translations.rus.slice(0, 3).join(', '));
+            }
+          });
+        }
+
+        const parsed = raw.reduce((acc, item) => {
+          const lvls = item.l || item.level || Array.of();
+          const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n));
+          if (!newLvl) return acc;
+          const forms = item.f || item.forms || Array.of();
+          const form = forms.at(0) || {};
+          const trans = form.i || form.transcriptions || {};
+          const meanings = form.m || form.meanings || Array.of();
+          const hanzi = item.s || item.simplified;
+          const ru = ruMap.get(hanzi) || meanings.slice(0, 3).join(', ');
+          if (hanzi && ru) acc.push({ id: 'hsk_' + (acc.length + 1), hanzi, pinyin: trans.pinyin || '', ru, level: newLvl });
+          return acc;
+        }, Array.of());
+
+        saveVocab(parsed);
+        st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
+    }
     } catch (e) {
       st.textContent = 'Ошибка: ' + e.message;
     }
