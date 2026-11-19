@@ -143,7 +143,7 @@ const res = await fetch('./hsk.json');
       let idx = 1;
       for (const item of data) {
         const lvls = item.level || [];
-        const newLvl = [1, 2, 3, 4].find(n => lvls.includes(`new-${n}`));
+     const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n) || lvls.includes('new-' + n) || lvls.includes(String(n)));
         if (!newLvl) continue;
         const form = (item.forms && item.forms[0]) || {};
         const pinyin = (form.transcriptions && form.transcriptions.pinyin) || '';
