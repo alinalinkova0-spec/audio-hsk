@@ -1,9 +1,9 @@
 import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=25';
-import { renderPhraseChoice } from './screens/segment.js?v=3';
+import { renderCard, renderBlitzCard } from './screens/card.js?v=27';
+import { renderPhraseChoice } from './screens/segment.js?v=5';
 
-const VOCAB_KEY = 'hsk_vocab_v6';
+const VOCAB_KEY = 'hsk_vocab_v7';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -181,16 +181,20 @@ function startMode(mode) {
       word: item.word,
       meta: { tier: item.tier, label: `${idx + 1}/${ramp.length}` }
     }));
-  } else if (mode === 'blitz') {
-    const filtered = getFilteredWords();
-    const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
-    const queue = [...slice].sort(() => Math.random() - 0.5).slice(0, 15);
+} else if (mode === 'blitz') {
+  const filtered = getFilteredWords();
+  if (selectedLesson * 50 >= filtered.length) selectedLesson = 0;
+  const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
+  const ruOnly = slice.filter(w => /[а-яё]/i.test(w.ru) && !w.ru.includes('MYMEMORY'));
+  const pool = ruOnly.length >= 4 ? ruOnly : slice;
+  const queue = [...pool].sort(() => Math.random() - 0.5).slice(0, 15);
     steps = queue.map((w, idx) => ({
       type: 'blitz',
       word: w,
       meta: { label: `${idx + 1}/${queue.length}` }
     }));
   } else {
+    
     const due = dueItems(srs, sentences.map(s => s.id));
     const ids = (due.length ? due : sentences.map(s => s.id)).slice(0, 5);
     const queue = ids.map(id => sentences.find(s => s.id === id)).filter(Boolean);
