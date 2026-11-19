@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard } from './screens/card.js?v=21';
 import { renderSegment } from './screens/segment.js';
 
-const VOCAB_KEY = 'hsk_vocab_v1';
+const VOCAB_KEY = 'hsk_vocab_v2';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -137,7 +137,7 @@ function stats() {
     const st = app.querySelector('#fetchStatus');
     st.textContent = 'Загрузка базы HSK 1–4...';
     try {
-      const res = await fetch('./hsk.json');
+const res = await fetch('./hsk.json?v=2');
       if (!res.ok) throw new Error('HTTP ' + res.status);
       const raw = await res.json();
       const parsed = Array.isArray(raw) && raw.at(0) && raw.at(0).ru
