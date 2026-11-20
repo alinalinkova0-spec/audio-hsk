@@ -169,8 +169,8 @@ function home() {
         <div style="text-align:left;font-size:14px;color:var(--muted);">План на сегодня (нажми на задание):</div>
         ${taskButtons}
       </div>
-      <div style="width:100%;max-width:420px;margin:20px auto 0;text-align:center;">
-        <img src="./goose.jpg" alt="Гусь-помощник" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
+           <div style="width:100%;max-width:420px;margin:0 auto;text-align:center;overflow:hidden;">
+        <img src="./goose.jpg" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-36px;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
       </div>
 
     </section>`;
