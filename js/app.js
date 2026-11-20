@@ -235,6 +235,24 @@ function startMode(mode) {
     if (i >= steps.length) {
       saveSRS(srs);
       addDaily(mode, steps.length);
+
+      const curLvl = Number(selectedLevel) || 1;
+      const lvlDone = getLevelProgress(curLvl) >= 90;
+
+      if (lvlDone) {
+        app.innerHTML = `<section class="hero" style="padding:36px 0;">
+          <h1 style="font-size:26px;color:var(--jade);margin-bottom:16px;">Успешно пройден HSK ${curLvl} 🎉</h1>
+          <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
+            <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
+            <span style="position:absolute;right:21%;bottom:25%;transform:rotate(-6deg);font-family:'Inter',sans-serif;font-weight:800;font-size:14px;color:#231F20;letter-spacing:0.5px;pointer-events:none;">HSK ${curLvl}</span>
+          </div>
+          <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
+            <a href="#/" class="cta">Перейти к следующему уровню</a>
+          </div>
+        </section>`;
+        return;
+      }
+
       app.innerHTML = `<section class="hero"><h1>Задание выполнено! ✓</h1>
         <p>Пройдено упражнений: <b>${steps.length}</b></p>
         <div class="row" style="justify-content:center;gap:12px;margin-top:12px;">
@@ -244,6 +262,7 @@ function startMode(mode) {
       app.querySelector('#againBtn').onclick = () => startMode(mode);
       return;
     }
+
     const st = steps[i++];
     if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
     else if (st.type === 'blitz') renderBlitzCard(app, st.word, srs, next, st.meta);
