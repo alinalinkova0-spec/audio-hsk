@@ -3,7 +3,7 @@ import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard } from './screens/card.js?v=29';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
-const VOCAB_KEY = 'hsk_vocab_v11';
+const VOCAB_KEY = 'hsk_vocab_v12';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -275,7 +275,8 @@ function stats() {
     const st = app.querySelector('#fetchStatus');
     st.textContent = 'Загрузка базы HSK 1–4...';
     try {
-      const ruUrl = 'https://raw.githubusercontent.com' + '/LiudmilaLV/json_hsk/master/hsk.json';
+      const host = 'raw.' + 'github' + 'usercontent.com';
+      const ruUrl = 'https://' + host + '/LiudmilaLV/json_hsk/master/hsk.json';
       const [resNew, resRu] = await Promise.all([
         fetch('./hsk.json?v=3'),
         fetch(ruUrl).catch(() => null)
@@ -283,40 +284,81 @@ function stats() {
       if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
       const raw = await resNew.json();
 
+      const shortRu = str => {
+        const firstMeaning = String(str || '')
+          .split(/[,;/(]/)
+          .map(s => s.trim())
+          .find(Boolean) || '';
+        return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
+      };
+
       const ruMap = new Map();
+
       if (resRu && resRu.ok) {
         const ruList = await resRu.json();
         ruList.forEach(w => {
           if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
             ruMap.set(w.hanzi, {
-              ru: w.translations.rus.slice(0, 3).join(', '),
-              
-              pinyin: w.pinyin || ''            });
+              ru: shortRu(w.translations.rus[0]),
+              pinyin: w.pinyin || ''
+            });
           }
         });
       }
 
       const parsed = [];
+      const needTranslate = [];
+
       for (const item of raw) {
-        const lvls = item.l || item.level || Array.of();
-        const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n));
+        const lvls = item.l || item.level || [];
+        const newLvl = [1, 2, 3, 4].find(n => lvls.includes('n' + n));
         if (!newLvl) continue;
-        const forms = item.f || item.forms || Array.of();
-        const form = forms.at(0) || {};
+        const forms = item.f || item.forms || [];
+        const form = forms[0] || {};
         const hanzi = item.s || item.simplified;
+        if (!hanzi) continue;
+
         const found = ruMap.get(hanzi);
-        const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
+        const rawI = Array.isArray(form.i) ? form.i[0] : form.i;
         const pinyin =
           (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) ||
           form.p ||
           (found && found.pinyin) ||
           '';
-        const ru = found ? found.ru : '';
-        if (hanzi && ru && /[а-яё]/i.test(ru) && !ru.includes('MYMEMORY')) {
-          parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
+
+        if (found && found.ru && /[а-яё]/i.test(found.ru)) {
+          parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru: found.ru, level: newLvl });
+        } else {
+          const meanings = form.m || form.meanings || [];
+          const en = String(meanings[0] || '').replace(/\([^)]*\)/g, '').split(/[,;/]/)[0].trim();
+          if (en) needTranslate.push({ hanzi, pinyin, en, level: newLvl });
         }
       }
 
+      const BATCH = 40;
+      for (let i = 0; i < needTranslate.length; i += BATCH) {
+        const chunk = needTranslate.slice(i, i + BATCH);
+        st.textContent = `Перевод новых слов HSK 1–4: ${parsed.length} / ${parsed.length + needTranslate.length}...`;
+        try {
+          const q = encodeURIComponent(chunk.map(x => x.en).join('\n'));
+          const trRes = await fetch(`https://googleapis.com{q}`);
+          if (trRes.ok) {
+            const trData = await trRes.json();
+            const fullText = (trData[0] || []).map(part => part[0]).join('');
+            const lines = fullText.split('\n');
+            chunk.forEach((item, idx) => {
+              const ru = shortRu(lines[idx]);
+              if (ru && /[а-яё]/i.test(ru)) {
+                parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi: item.hanzi, pinyin: item.pinyin, ru, level: item.level });
+              }
+            });
+          }
+        } catch {}
+      }
+
+      saveVocab(parsed);
+      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 (основной перевод).';
+        
       saveVocab(parsed);
       st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
     } catch (e) {
