@@ -1,6 +1,6 @@
 import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=41';
+import { renderCard, renderBlitzCard } from './screens/card.js?v=42';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
 const VOCAB_KEY = 'hsk_vocab_v12';
