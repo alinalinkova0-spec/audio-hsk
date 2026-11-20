@@ -171,7 +171,8 @@ function home() {
         <select id="lesSel">${lessonOptions}</select>
       </div>
       <div style="width:100%;max-width:420px;margin:16px auto 0;display:flex;flex-direction:column;gap:10px;">
-        <div style="text-align:left;font-size:14px;color:var(--muted);">План на сегодня (нажми на задание):</div>
+        <div style="text-align:left;font-size:14px;font-weight:600;color:var(--fg);">План на сегодня (нажми на задание):</div>
+        <div style="text-align:left;font-size:12px;color:var(--muted);margin-top:-6px;line-height:1.35;">Справа показана дневная норма (сегодня / цель). Для открытия следующего HSK нужно выучить 95% слов уровня выше.</div>
         ${taskButtons}
       </div>
            <div style="width:100%;max-width:420px;margin:0 auto;text-align:center;overflow:hidden;">
