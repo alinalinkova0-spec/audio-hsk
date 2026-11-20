@@ -197,7 +197,7 @@ speak(word.hanzi, { rate });
 
 export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   const all = window.__ALL_WORDS || [];
-  const rate = +(0.95 + Math.random() * 0.15).toFixed(2);
+  const rate = +(1.2 + Math.random() * 0.15).toFixed(2);
   const LIMIT_MS = 3500;
 
   const mainRu = str => String(str || '').split(/[,;/]/).at(0).trim();
