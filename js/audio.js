@@ -86,4 +86,4 @@ export function speak(text, { rate = 1, instant = false } = {}) {
   } else {
     speakTTS(clean, rate);
   }
-
+}
