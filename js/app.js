@@ -127,6 +127,7 @@ function home() {
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
     const from = idx * 50 + 1;
     const to = Math.min((idx + 1) * 50, filtered.length);
+
     const sel = idx === selectedLesson ? 'selected' : '';
     return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
   }).join('');
