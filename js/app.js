@@ -177,6 +177,8 @@ function home() {
           <span style="font-size:14px;font-weight:600;color:var(--fg);">План на сегодня:</span>
           <span style="font-size:12px;color:var(--muted);">Сегодня / норма</span>
         </div>
+                ${taskButtons}
+      </div>
    <div style="width:100%;max-width:260px;margin:6px auto 0;text-align:center;overflow:hidden;">
      <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
    </div>
