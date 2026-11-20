@@ -137,10 +137,12 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
     if (ok) {
       const curLvl = localStorage.getItem('hsk_lvl') || '1';
       root.innerHTML = `<section class="hero" style="padding:36px 0;">
-        <h1 style="font-size:26px;color:var(--jade);margin-bottom:16px;">Успешно пройден HSK ${curLvl} 🎉</h1>
         <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
           <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
-          <span style="position:absolute;right:21%;bottom:25%;transform:rotate(-6deg);font-family:'Inter',sans-serif;font-weight:800;font-size:14px;color:#231F20;letter-spacing:0.5px;pointer-events:none;">HSK ${curLvl}</span>
+          <div style="position:absolute;right:2%;top:26%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:17px;line-height:1.3;color:var(--jade);letter-spacing:0.3px;pointer-events:none;">
+            <div>УСПЕШНО ПРОЙДЕН</div>
+            <div style="color:var(--accent);font-size:21px;margin-top:2px;">HSK ${curLvl} 🎉</div>
+          </div>
         </div>
         <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
           <a href="#/" class="cta">Перейти к следующему уровню</a>
