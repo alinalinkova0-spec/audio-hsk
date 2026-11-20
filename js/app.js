@@ -249,30 +249,33 @@ function startMode(mode) {
     if (i >= steps.length) {
       const curLvl = Number(selectedLevel) || 1;
       const lvlDone = getLevelProgress(curLvl) >= 95;
-
-      if (lvlDone) {
-        app.innerHTML = `<section class="hero" style="padding:36px 0;">
-          <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
-            <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
-            <div style="position:absolute;left:46%;right:0;top:28%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;line-height:1.3;color:var(--jade);letter-spacing:0.2px;pointer-events:none;">
-              <div>УСПЕШНО ПРОЙДЕН</div>
-              <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK ${curLvl} 🎉</div>
-            </div>
-          </div>
           <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
             <a href="#/" class="cta">Перейти к следующему уровню</a>
-function stats() {
-  const total = Object.keys(srs).length;
-  const learned = Object.values(srs).filter(s => s.reps >= 3).length;
-  app.innerHTML = `<section>
-    <h2>Статистика и офлайн-база</h2>
-    <p>Слов в базе устройства: <b>${allWords.length}</b></p>
-    <p>В повторении: <b>${total}</b></p>
-    <p>Уверенно на слух: <b>${learned}</b></p>
+          </div>
+        </section>`;
+        return;
+      }
 
-    <div class="box">
-      <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
-      <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки словарь сохранится в браузере и будет работать офлайн.</p>
+      app.innerHTML = `<section class="hero"><h1>Задание выполнено! ✓</h1>
+        <p>Пройдено упражнений: <b>${steps.length}</b></p>
+        <div class="row" style="justify-content:center;gap:12px;margin-top:12px;">
+          <button id="againBtn" class="ghost">Ещё раз</button>
+          <a href="#/" class="cta">К списку заданий</a>
+        </div></section>`;
+      app.querySelector('#againBtn').onclick = () => startMode(mode);
+      return;
+    }
+
+    const st = steps[i++];
+    if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
+    else if (st.type === 'blitz') renderBlitzCard(app, st.word, srs, next, st.meta);
+    else renderPhraseChoice(app, st.sentence, sentences, srs, next);
+  }
+  next();
+}
+
+function stats() {
+      
       <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Скачать словарь</button>
       <p id="fetchStatus" style="margin-top:10px;color:var(--accent);"></p>
     </div>
