@@ -1,7 +1,7 @@
 import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=46';
-import { renderPhraseChoice } from './screens/segment.js?v=8';
+import { renderCard, renderBlitzCard } from './screens/card.js?v=48';
+import { renderPhraseChoice } from './screens/segment.js?v=9';
 
 const VOCAB_KEY = 'hsk_vocab_v13';
 
@@ -260,14 +260,53 @@ function startMode(mode) {
     steps = queue.map(s => ({ type: 'phrase', sentence: s }));
   }
   let i = 0;
+  let goalShown = false;
+
+  function showAllPlanDone() {
+    app.innerHTML = `<section class="hero" style="padding:28px 16px;">
+      <div style="width:100%;max-width:260px;margin:0 auto;">
+        <img src="./goose_plan_done.gif" alt="План на сегодня выполнен" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
+      </div>
+      <h1 style="margin-top:12px;color:var(--jade);font-size:24px;">План на сегодня выполнен!!! 🎉</h1>
+      <p style="color:var(--muted);margin-top:6px;">Все 3 задания на сегодня закрыты!</p>
+      <div class="row" style="justify-content:center;gap:12px;margin-top:18px;">
+        <a href="#/" class="cta">На главную</a>
+      </div>
+    </section>`;
+  }
+
   function next() {
     if (i > 0) {
       addDaily(mode, 1);
       saveSRS(srs);
     }
+
+    const dNow = getDaily();
+    const allThreeDone = dNow.words >= 15 && dNow.blitz >= 15 && dNow.phrases >= 5;
+
+    if (mode === 'words' && i > 0 && dNow.words >= 15 && !goalShown) {
+      goalShown = true;
+      if (allThreeDone) {
+        showAllPlanDone();
+        return;
+      }
+      app.innerHTML = `<section class="hero" style="padding:28px 16px;">
+        <h1>На сегодня план выполнен! ✓</h1>
+        <p style="font-size:16px;margin-top:8px;">Желаешь продолжить?</p>
+        <div class="row" style="justify-content:center;gap:12px;margin-top:18px;">
+          <button id="contBtn" class="cta" style="border:none;cursor:pointer;">Продолжить</button>
+          <a href="#/" class="ghost">К списку заданий</a>
+        </div>
+      </section>`;
+      app.querySelector('#contBtn').onclick = () => {
+        if (i >= steps.length) startMode(mode);
+        else next();
+      };
+      return;
+    }
+
     if (i >= steps.length) {
       const curLvl = Number(selectedLevel) || 1;
-
       const lvlDone = getLevelProgress(curLvl) >= 95;
 
       if (lvlDone) {
@@ -283,6 +322,11 @@ function startMode(mode) {
             <a href="#/" class="cta">Перейти к следующему уровню</a>
           </div>
         </section>`;
+        return;
+      }
+
+      if (allThreeDone) {
+        showAllPlanDone();
         return;
       }
 
