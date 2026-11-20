@@ -194,11 +194,10 @@ speak(word.hanzi, { rate });
     });
   }
 }
-
 export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   const all = window.__ALL_WORDS || [];
-  const rate = +(1.2 + Math.random() * 0.15).toFixed(2);
-  const LIMIT_MS = 3500;
+  const rate = 0.95;
+  const LIMIT_MS = 5000;
 
   const mainRu = str => String(str || '').split(/[,;/]/).at(0).trim();
   const isRu = str => /[а-яё]/i.test(str) && !String(str).includes('MYMEMORY');
@@ -212,20 +211,22 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     );
   }
   const others = shuffle(validPool).slice(0, 3);
-  const opts = shuffle([word, ...others]);
-
+  const opts = shuffle(Array.of(word, ...others));
 
   root.innerHTML = `
     <div class="card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;">
-        <span style="color:#fbbf24;font-weight:600;">⚡ Молния (3.5 сек)</span>
+        <span style="color:#fbbf24;font-weight:600;">⚡ Молния (5 сек)</span>
         <span style="color:var(--muted);">${meta.label || ''}</span>
       </div>
-      <div style="width:100%;height:6px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden;margin-bottom:14px;">
+      <div style="width:100%;height:6px;background:rgba(0,0,0,0.08);border-radius:4px;overflow:hidden;margin-bottom:14px;">
         <div id="timerBar" style="width:100%;height:100%;background:#fbbf24;transition:width ${LIMIT_MS}ms linear;"></div>
       </div>
-      <div class="card-audio">
-        <button id="play" class="big-play">▶</button>
+      <div class="card-audio" style="flex-direction:column;align-items:center;gap:10px;">
+        <button id="play" class="big-play" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button id="repeatWord" class="ghost" style="font-size:14px;padding:7px 14px;">🔊 Повторить слово</button>
       </div>
       <p class="prompt">Быстро нажми перевод!</p>
       <div class="answers" id="answers" style="grid-template-columns:1fr;"></div>
@@ -247,8 +248,11 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     answerEl.appendChild(b);
   });
 
-  root.querySelector('#play').onclick = () => speak(word.hanzi, { rate, instant: true });
-  speak(word.hanzi, { rate, instant: true });
+  const playNow = () => speak(word.hanzi, { rate, instant: true });
+  root.querySelector('#play').onclick = playNow;
+  root.querySelector('#repeatWord').onclick = playNow;
+  playNow();
+
   requestAnimationFrame(() => { bar.style.width = '0%'; });
   const timer = setTimeout(() => {
     if (!document.body.contains(answerEl)) return;
@@ -257,12 +261,11 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
 
   function finish(ok, btn, timeout) {
     if (done || !document.body.contains(answerEl)) return;
-    
     done = true;
     clearTimeout(timer);
     if (btn) btn.classList.add(ok ? 'ok' : 'bad');
     if (!ok) {
-      [...answerEl.children].forEach(b => {
+      Array.from(answerEl.children).forEach(b => {
         if (b.textContent === mainRu(word.ru)) b.classList.add('ok');
       });
     }
@@ -276,4 +279,3 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
 function shuffle(a) {
   return a.map(v => ({ r: Math.random(), v })).sort((x, y) => x.r - y.r).map(x => x.v);
 }
-
