@@ -1,9 +1,9 @@
 import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=28';
+import { renderCard, renderBlitzCard } from './screens/card.js?v=29';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
-const VOCAB_KEY = 'hsk_vocab_v10';
+const VOCAB_KEY = 'hsk_vocab_v11';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 
@@ -98,7 +98,32 @@ function buildRampQueue(slice) {
   return [...part1, ...part2, ...part3, ...rest];
 }
 
+function getLevelProgress(lvl) {
+  const lvlWords = allWords.filter(w => Number(w.level) === lvl);
+  if (!lvlWords.length) return 0;
+  const known = lvlWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
+  return Math.round((known / lvlWords.length) * 100);
+}
+
 function home() {
+  const p1 = getLevelProgress(1);
+  const p2 = getLevelProgress(2);
+  const p3 = getLevelProgress(3);
+  const p4 = getLevelProgress(4);
+
+  const unlocked2 = p1 >= 90;
+  const unlocked3 = unlocked2 && p2 >= 90;
+  const unlocked4 = unlocked3 && p3 >= 90;
+
+  if (selectedLevel === 'all' || (selectedLevel === '2' && !unlocked2) || (selectedLevel === '3' && !unlocked3) || (selectedLevel === '4' && !unlocked4)) {
+    selectedLevel = '1';
+    localStorage.setItem('hsk_lvl', '1');
+  }
+
+  const filtered = getFilteredWords();
+  const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
+  if (selectedLesson >= lessonCount) selectedLesson = 0;
+
   const filtered = getFilteredWords();
   const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
   if (selectedLesson >= lessonCount) selectedLesson = 0;
@@ -135,12 +160,12 @@ function home() {
       <p>В офлайн-памяти: <b>${allWords.length}</b> слов</p>
       <div class="controls">
         <select id="lvlSel">
-          <option value="all" ${selectedLevel === 'all' ? 'selected' : ''}>Все уровни</option>
-          <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1</option>
-          <option value="2" ${selectedLevel === '2' ? 'selected' : ''}>HSK 2</option>
-          <option value="3" ${selectedLevel === '3' ? 'selected' : ''}>HSK 3</option>
-          <option value="4" ${selectedLevel === '4' ? 'selected' : ''}>HSK 4</option>
+          <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
+          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? '' : '🔒 '}HSK 2 (${p2}% / нужно 90% в HSK 1)</option>
+          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? '' : '🔒 '}HSK 3 (${p3}% / нужно 90% в HSK 2)</option>
+          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? '' : '🔒 '}HSK 4 (${p4}% / нужно 90% в HSK 3)</option>
         </select>
+
         <select id="lesSel">${lessonOptions}</select>
       </div>
       <div style="width:100%;max-width:420px;margin:16px auto 0;display:flex;flex-direction:column;gap:10px;">
@@ -285,13 +310,12 @@ function stats() {
         const found = ruMap.get(hanzi);
         const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
         const pinyin =
-      (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) ||
+          (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) ||
           form.p ||
           (found && found.pinyin) ||
           '';
-        const meanings = form.m || form.meanings || Array.of();
-        const ru = found ? found.ru : meanings.slice(0, 2).join(', ');
-        if (hanzi && ru && !ru.includes('MYMEMORY')) {
+        const ru = found ? found.ru : '';
+        if (hanzi && ru && /[а-яё]/i.test(ru) && !ru.includes('MYMEMORY')) {
           parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru, level: newLvl });
         }
       }
@@ -299,6 +323,7 @@ function stats() {
       saveVocab(parsed);
       st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
     } catch (e) {
+
       st.textContent = 'Ошибка: ' + e.message;
     }
   };
