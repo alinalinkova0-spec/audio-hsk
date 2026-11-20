@@ -134,6 +134,20 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
     });
 
     speak(o.hanzi, { rate: 0.95 });
+    if (ok) {
+      const curLvl = localStorage.getItem('hsk_lvl') || '1';
+      root.innerHTML = `<section class="hero" style="padding:36px 0;">
+        <h1 style="font-size:26px;color:var(--jade);margin-bottom:16px;">Успешно пройден HSK ${curLvl} 🎉</h1>
+        <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
+          <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
+          <span style="position:absolute;right:21%;bottom:25%;transform:rotate(-6deg);font-family:'Inter',sans-serif;font-weight:800;font-size:14px;color:#231F20;letter-spacing:0.5px;pointer-events:none;">HSK ${curLvl}</span>
+        </div>
+        <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
+          <a href="#/" class="cta">Перейти к следующему уровню</a>
+        </div>
+      </section>`;
+      return;
+    }
 
       const wrongHint = (!ok && o.pinyin)
       ? `<div style="font-size:15px;color:#C83E37;margin-top:10px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">Твой выбор: ${o.hanzi} (${o.pinyin}) — ${o.ru || ''}</div>`
