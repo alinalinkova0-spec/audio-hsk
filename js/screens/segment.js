@@ -1,25 +1,32 @@
-import { speak } from '../audio.js';
+import { speak } from '../audio.js?v=2';
 import { review, saveSRS } from '../srs.js';
-
-function randomRate() {
-  return +(0.9 + Math.random() * 0.25).toFixed(2);
-}
 
 export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
   const distractors = allSentences
     .filter(x => x.id !== s.id)
     .sort(() => Math.random() - 0.5)
     .slice(0, 3);
-  const options = [s, ...distractors].sort(() => Math.random() - 0.5);
-  const currentRate = randomRate();
+  const options = Array.of(s, ...distractors).sort(() => Math.random() - 0.5);
+
+  const MODES = Array.of(
+    { rate: 1.0, label: 'Обычно' },
+    { rate: 0.75, label: 'Помедленнее' }
+  );
+  let rate = Number(localStorage.getItem('hsk_phrase_speed'));
+  if (rate !== 1.0 && rate !== 0.75) rate = 1.0;
 
   root.innerHTML = `
     <div class="card">
-      <div class="card-audio">
-        <button id="play" class="big-play" aria-label="Прослушать">▶</button>
-        <button id="slow" class="ghost">0.8x</button>
+      <div class="card-audio" style="flex-direction:row;align-items:center;justify-content:center;gap:18px;">
+        <button id="play" class="big-play" aria-label="Прослушать" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div id="phraseSpeedWrap" style="position:relative;display:inline-flex;flex-direction:column;align-items:center;background:#EFE8D8;border:1.5px solid var(--border);border-radius:20px;padding:4px;user-select:none;cursor:pointer;">
+          <div id="phraseSpeedThumb" style="position:absolute;left:4px;right:4px;top:4px;height:36px;background:var(--accent);border-radius:15px;transition:transform 0.2s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(200,62,55,0.28);"></div>
+          ${MODES.map(m => `<button type="button" data-rate="${m.rate}" style="position:relative;z-index:1;width:118px;height:36px;padding:0 8px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:color 0.2s;color:${m.rate === rate ? '#FFFDF9' : 'var(--fg)'};">${m.label}</button>`).join('')}
+        </div>
       </div>
-      <p class="prompt">Прослушай фразу (темп: <b>${currentRate}x</b>) и выбери перевод</p>
+      <p class="prompt">Прослушай фразу и выбери перевод</p>
       <div id="answers" class="answers" style="grid-template-columns:1fr;"></div>
       <div id="reveal" class="reveal" hidden>
         <div id="phraseText" style="font-size:20px;font-weight:600;"></div>
@@ -35,7 +42,26 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
 
   const answerEl = root.querySelector('#answers');
   const reveal = root.querySelector('#reveal');
+  const speedWrap = root.querySelector('#phraseSpeedWrap');
+  const speedThumb = root.querySelector('#phraseSpeedThumb');
+  const speedBtns = Array.from(speedWrap.querySelectorAll('button[data-rate]'));
   let done = false;
+
+  function setRate(newRate, shouldSpeak = true) {
+    rate = newRate;
+    localStorage.setItem('hsk_phrase_speed', String(rate));
+    const idx = MODES.findIndex(m => m.rate === rate);
+    speedThumb.style.transform = `translateY(${Math.max(0, idx) * 36}px)`;
+    speedBtns.forEach(b => {
+      b.style.color = Number(b.dataset.rate) === rate ? '#FFFDF9' : 'var(--fg)';
+    });
+    if (shouldSpeak) speak(s.hanzi, { rate });
+  }
+
+  setRate(rate, false);
+  speedBtns.forEach(b => {
+    b.onclick = () => setRate(Number(b.dataset.rate), true);
+  });
 
   options.forEach(o => {
     const btn = document.createElement('button');
@@ -47,28 +73,27 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
     answerEl.appendChild(btn);
   });
 
-  root.querySelector('#play').onclick = () => speak(s.hanzi, { rate: currentRate });
-  root.querySelector('#slow').onclick = () => speak(s.hanzi, { rate: 0.75 });
-speak(s.hanzi, { rate: currentRate });
+  root.querySelector('#play').onclick = () => speak(s.hanzi, { rate });
+  speak(s.hanzi, { rate });
 
   function choose(o, btn) {
     if (done) return;
     done = true;
     const ok = o.id === s.id;
     btn.classList.add(ok ? 'ok' : 'bad');
-    if (!ok) [...answerEl.children].forEach(b => {
+    if (!ok) Array.from(answerEl.children).forEach(b => {
       if (b.textContent === s.ru) b.classList.add('ok');
     });
 
-    speak(s.hanzi, { rate: 1.2 });
+    speak(s.hanzi, { rate });
 
     reveal.hidden = false;
     reveal.querySelector('#phraseText').innerHTML = `
       <div>${s.hanzi}</div>
-      <div style="font-size:17px;color:#94a3b8;margin-top:6px;font-weight:400;">${s.pinyin}</div>
-      <div style="font-size:16px;color:#e2e8f0;margin-top:6px;font-weight:400;">${s.ru}</div>
+      <div style="font-size:17px;color:#1E7E5E;margin-top:6px;font-weight:500;">${s.pinyin}</div>
+      <div style="font-size:16px;color:#231F20;margin-top:6px;font-weight:600;">${s.ru}</div>
     `;
-    reveal.querySelector('#again').onclick = () => speak(s.hanzi, { rate: 1.2 });
+    reveal.querySelector('#again').onclick = () => speak(s.hanzi, { rate });
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
         review(srsState, s.id, +g.dataset.grade);
