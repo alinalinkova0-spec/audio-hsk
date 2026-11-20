@@ -88,7 +88,7 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
         <span style="color:${tierColors[tier]};font-weight:600;">${tierNames[tier]}</span>
         <span style="color:var(--muted);">${stepLabel}</span>
       </div>
-      <div class="card-audio" style="flex-direction:column;gap:14px;">
+      <div class="card-audio" style="flex-direction:row;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;">
         <button id="play" class="big-play">▶</button>
         <div id="speedWrap" style="position:relative;display:inline-flex;align-items:center;background:#EFE8D8;border:1px solid var(--border);border-radius:999px;padding:3px;user-select:none;touch-action:pan-y;cursor:pointer;">
           <div id="speedThumb" style="position:absolute;top:3px;bottom:3px;left:3px;width:58px;background:var(--accent);border-radius:999px;transition:transform 0.2s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(200,62,55,0.28);"></div>
