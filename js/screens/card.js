@@ -159,7 +159,7 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
   }, { passive: true });
 
   root.querySelector('#play').onclick = () => speak(word.hanzi, { rate });
-  setTimeout(() => speak(word.hanzi, { rate }), 200);
+speak(word.hanzi, { rate });
 
   let done = false;
   function choose(o, btn) {
