@@ -107,6 +107,27 @@ function getLevelProgress(lvl) {
 }
 
 function home() {
+  function home() {
+  if (allWords.length <= 25) {
+    app.innerHTML = `
+      <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
+        <h1>Привет! 👋</h1>
+        <p style="font-size:15px;line-height:1.5;color:var(--fg);margin-top:8px;">
+          Чтобы всё заработало и потом открывалось даже <b>офлайн без интернета</b>, сделай 3 быстрых шага:
+        </p>
+        <div class="box" style="text-align:left;margin:14px 0;font-size:14px;line-height:1.6;">
+          <div>1. Нажми кнопку ниже (или открой вкладку <b>«Статистика»</b> вверху)</div>
+          <div>2. Нажми <b>«Скачать словарь»</b> — база HSK 1–4 сохранится в память устройства</div>
+          <div>3. Вернись в <b>«Задания»</b> и начинай тренировать аудирование!</div>
+        </div>
+        <a href="#/stats" class="cta" style="display:inline-block;width:100%;text-align:center;">Перейти в Статистику →</a>
+        <div style="width:100%;max-width:210px;margin:14px auto 0;text-align:center;">
+          <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
+        </div>
+      </section>`;
+    return;
+  }
+
   const p1 = getLevelProgress(1);
   const p2 = getLevelProgress(2);
   const p3 = getLevelProgress(3);
