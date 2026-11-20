@@ -150,7 +150,12 @@ function home() {
         ${badge}
       </button>`;
   }).join('');
-
+  const hr = new Date().getHours();
+  const gooseImg = (hr >= 6 && hr < 10)
+    ? './goose_morning.jpg'
+    : (hr >= 10 && hr < 21)
+      ? './goose.jpg'
+      : './goose_night.jpg';
   app.innerHTML = `
     <section class="hero">
       <h1>听 HSK 1–4 — аудирование</h1>
@@ -170,7 +175,7 @@ function home() {
         ${taskButtons}
       </div>
            <div style="width:100%;max-width:420px;margin:0 auto;text-align:center;overflow:hidden;">
-        <img src="./goose.jpg" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-36px;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
+        <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-12px;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
       </div>
 
     </section>`;
