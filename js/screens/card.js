@@ -165,11 +165,17 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   const mainRu = str => String(str || '').split(/[,;/]/).at(0).trim();
   const isRu = str => /[а-яё]/i.test(str) && !String(str).includes('MYMEMORY');
 
-  const validPool = all.filter(
+  let validPool = all.filter(
     w => w.id !== word.id && isRu(w.ru) && mainRu(w.ru) && mainRu(w.ru) !== mainRu(word.ru)
   );
+  if (validPool.length < 3) {
+    validPool = all.filter(
+      w => w.id !== word.id && mainRu(w.ru) && mainRu(w.ru) !== mainRu(word.ru)
+    );
+  }
   const others = shuffle(validPool).slice(0, 3);
   const opts = shuffle([word, ...others]);
+
 
   root.innerHTML = `
     <div class="card">
