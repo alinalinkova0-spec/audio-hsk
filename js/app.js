@@ -107,7 +107,6 @@ function getLevelProgress(lvl) {
 }
 
 function home() {
-  function home() {
   if (allWords.length <= 25) {
     app.innerHTML = `
       <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
