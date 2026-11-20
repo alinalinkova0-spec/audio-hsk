@@ -247,8 +247,8 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     answerEl.appendChild(b);
   });
 
-  root.querySelector('#play').onclick = () => speak(word.hanzi, { rate });
-  speak(word.hanzi, { rate });
+  root.querySelector('#play').onclick = () => speak(word.hanzi, { rate, instant: true });
+  speak(word.hanzi, { rate, instant: true });
   requestAnimationFrame(() => { bar.style.width = '0%'; });
   const timer = setTimeout(() => {
     if (!document.body.contains(answerEl)) return;
