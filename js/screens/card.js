@@ -136,16 +136,17 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
     speak(o.hanzi, { rate: 0.95 });
 
     const wrongHint = (!ok && o.pinyin)
-      ? `<div style="font-size:15px;color:#f87171;margin-top:10px;font-family:system-ui,-apple-system,sans-serif;letter-spacing:normal;">Твой выбор: ${o.hanzi} (${o.pinyin}) — ${o.ru || ''}</div>`
+      ? `<div style="font-size:15px;color:#C83E37;margin-top:10px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">Твой выбор: ${o.hanzi} (${o.pinyin}) — ${o.ru || ''}</div>`
       : '';
 
     reveal.hidden = false;
     reveal.querySelector('#hanzi').innerHTML = `
       <div>${word.hanzi}</div>
-      ${word.pinyin ? `<div style="font-size:20px;color:#94a3b8;margin-top:6px;font-weight:400;font-family:system-ui,-apple-system,sans-serif;letter-spacing:normal;">${word.pinyin}</div>` : ''}
-      ${word.ru ? `<div style="font-size:19px;color:#e2e8f0;margin-top:6px;font-weight:500;font-family:system-ui,-apple-system,sans-serif;letter-spacing:normal;">${word.ru}</div>` : ''}
+      ${word.pinyin ? `<div style="font-size:20px;color:#1E7E5E;margin-top:6px;font-weight:500;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.pinyin}</div>` : ''}
+      ${word.ru ? `<div style="font-size:19px;color:#231F20;margin-top:6px;font-weight:600;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.ru}</div>` : ''}
       ${wrongHint}
     `;
+
     reveal.querySelector('#again').onclick = () => speak(word.hanzi, { rate: 0.95 });
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
