@@ -98,7 +98,7 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
         </div>
       </div>
       <p class="prompt">Какое слово прозвучало?</p>
-      <div class="answers" id="answers"></div>
+      <div class="answers" id="answers" style="grid-template-columns:1fr 1fr;gap:10px;"></div>
       <div class="reveal" id="reveal" hidden>
         <div class="hanzi" id="hanzi"></div>
         <div class="grades">
