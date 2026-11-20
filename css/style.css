@@ -330,6 +330,29 @@ main {
 
 main > * {
   width: 100%;
+
+  .hero img,
+.hero svg,
+.goose,
+.mascot {
+  margin-bottom: 6px !important;
+}
+
+.hero h1 {
+  margin-top: 4px !important;
+  margin-bottom: 6px !important;
+}
+
+.hero p {
+  margin-top: 0 !important;
+  margin-bottom: 10px !important;
+}
+
+.controls {
+  margin-top: 8px !important;
+}
+
+  
 }
 
 .hero {
