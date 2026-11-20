@@ -248,14 +248,12 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   });
 
   root.querySelector('#play').onclick = () => speak(word.hanzi, { rate });
-  setTimeout(() => {
-    speak(word.hanzi, { rate });
-    requestAnimationFrame(() => { bar.style.width = '0%'; });
-  }, 150);
+  speak(word.hanzi, { rate });
+  requestAnimationFrame(() => { bar.style.width = '0%'; });
   const timer = setTimeout(() => {
     if (!document.body.contains(answerEl)) return;
     finish(false, null, true);
-  }, LIMIT_MS + 150);
+  }, LIMIT_MS);
 
   function finish(ok, btn, timeout) {
     if (done || !document.body.contains(answerEl)) return;
