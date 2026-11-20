@@ -310,7 +310,7 @@ main {
   .grades { flex-wrap: wrap; }
   .grades button { flex: 1 1 45%; padding: 12px; }
   .controls select, .cta { width: 100%; text-align: center; }
-
+}
 html, body {
   min-height: 100dvh;
 }
@@ -352,11 +352,6 @@ main > * {
   margin-top: 8px !important;
 }
 
-  
-}
-
 .hero {
   padding: 12px 0;
-}
-
 }
