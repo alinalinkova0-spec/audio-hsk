@@ -175,7 +175,7 @@ function home() {
         ${taskButtons}
       </div>
            <div style="width:100%;max-width:420px;margin:0 auto;text-align:center;overflow:hidden;">
-        <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-12px;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
+        <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-42px;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
       </div>
 
     </section>`;
