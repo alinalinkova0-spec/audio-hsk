@@ -134,9 +134,9 @@ function home() {
 
   const d = getDaily();
   const tasks = [
-    { id: 'words', title: '1. Слова на слух (разгон 5–5–5)', done: d.words, goal: 15 },
-    { id: 'blitz', title: '2. Молния: перевод за 3.5 сек', done: d.blitz, goal: 15 },
-    { id: 'phrases', title: '3. Фразы HSK 4: выбрать перевод', done: d.phrases, goal: 5 },
+    { id: 'words', title: '1. Слова на слух', done: d.words, goal: 15 },
+    { id: 'blitz', title: '2. Молния', done: d.blitz, goal: 15 },
+    { id: 'phrases', title: '3. Фразы', done: d.phrases, goal: 5 },
   ];
 
   const taskButtons = tasks.map(t => {
