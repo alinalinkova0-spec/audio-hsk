@@ -49,7 +49,7 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
 
   root.querySelector('#play').onclick = () => speak(s.hanzi, { rate: currentRate });
   root.querySelector('#slow').onclick = () => speak(s.hanzi, { rate: 0.75 });
-  setTimeout(() => speak(s.hanzi, { rate: currentRate }), 200);
+speak(s.hanzi, { rate: currentRate });
 
   function choose(o, btn) {
     if (done) return;
@@ -60,7 +60,7 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
       if (b.textContent === s.ru) b.classList.add('ok');
     });
 
-    speak(s.hanzi, { rate: 0.95 });
+    speak(s.hanzi, { rate: 1.2 });
 
     reveal.hidden = false;
     reveal.querySelector('#phraseText').innerHTML = `
@@ -68,7 +68,7 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
       <div style="font-size:17px;color:#94a3b8;margin-top:6px;font-weight:400;">${s.pinyin}</div>
       <div style="font-size:16px;color:#e2e8f0;margin-top:6px;font-weight:400;">${s.ru}</div>
     `;
-    reveal.querySelector('#again').onclick = () => speak(s.hanzi, { rate: 0.95 });
+    reveal.querySelector('#again').onclick = () => speak(s.hanzi, { rate: 1.2 });
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
         review(srsState, s.id, +g.dataset.grade);
