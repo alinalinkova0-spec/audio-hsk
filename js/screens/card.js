@@ -75,20 +75,25 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
   const all = window.__ALL_WORDS || [];
   const tier = meta.tier || 'medium';
   const stepLabel = meta.label || '';
-  const rate = randomRate(tier);
+   const SPEEDS = [0.8, 1.0, 1.5];
+  let rate = Number(localStorage.getItem('hsk_speed'));
+  if (!SPEEDS.includes(rate)) rate = 1.0;
 
-  const tierColors = { easy: '#4ade80', medium: '#60a5fa', hard: '#f87171' };
+  const tierColors = { easy: '#1E7E5E', medium: '#B45309', hard: '#C83E37' };
   const tierNames = { easy: 'Разминка', medium: 'Средний', hard: 'Сложный (тоны и ловушки)' };
 
   root.innerHTML = `
     <div class="card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:13px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
         <span style="color:${tierColors[tier]};font-weight:600;">${tierNames[tier]}</span>
-        <span style="color:var(--muted);">${stepLabel} • темп ${rate}x</span>
+        <span style="color:var(--muted);">${stepLabel}</span>
       </div>
-      <div class="card-audio">
+      <div class="card-audio" style="flex-direction:column;gap:14px;">
         <button id="play" class="big-play">▶</button>
-        <button id="slow" class="ghost">0.85x</button>
+        <div id="speedWrap" style="position:relative;display:inline-flex;align-items:center;background:#EFE8D8;border:1px solid var(--border);border-radius:999px;padding:3px;user-select:none;touch-action:pan-y;cursor:pointer;">
+          <div id="speedThumb" style="position:absolute;top:3px;bottom:3px;left:3px;width:58px;background:var(--accent);border-radius:999px;transition:transform 0.2s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(200,62,55,0.28);"></div>
+          ${SPEEDS.map(s => `<button type="button" data-speed="${s}" style="position:relative;z-index:1;width:58px;padding:6px 0;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:color 0.2s;color:${s === rate ? '#FFFDF9' : 'var(--fg)'};">${s.toFixed(1)}x</button>`).join('')}
+        </div>
       </div>
       <p class="prompt">Какое слово прозвучало?</p>
       <div class="answers" id="answers"></div>
@@ -119,8 +124,40 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
   });
 
   const reveal = root.querySelector('#reveal');
+  const speedWrap = root.querySelector('#speedWrap');
+  const speedThumb = root.querySelector('#speedThumb');
+  const speedBtns = Array.from(speedWrap.querySelectorAll('button[data-speed]'));
+
+  function setSpeed(newRate, shouldSpeak = true) {
+    rate = newRate;
+    localStorage.setItem('hsk_speed', String(rate));
+    const idx = SPEEDS.indexOf(rate);
+    speedThumb.style.transform = `translateX(${idx * 58}px)`;
+    speedBtns.forEach(b => {
+      b.style.color = Number(b.dataset.speed) === rate ? '#FFFDF9' : 'var(--fg)';
+    });
+    if (shouldSpeak) speak(word.hanzi, { rate });
+  }
+
+  setSpeed(rate, false);
+
+  speedBtns.forEach(b => {
+    b.onclick = () => setSpeed(Number(b.dataset.speed), true);
+  });
+
+  let touchStartX = 0;
+  speedWrap.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+  speedWrap.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - touchStartX;
+    if (Math.abs(dx) < 18) return;
+    const idx = SPEEDS.indexOf(rate);
+    const nextIdx = dx > 0 ? Math.min(SPEEDS.length - 1, idx + 1) : Math.max(0, idx - 1);
+    if (nextIdx !== idx) setSpeed(SPEEDS[nextIdx], true);
+  }, { passive: true });
+
   root.querySelector('#play').onclick = () => speak(word.hanzi, { rate });
-  root.querySelector('#slow').onclick = () => speak(word.hanzi, { rate: 0.8 });
   setTimeout(() => speak(word.hanzi, { rate }), 200);
 
   let done = false;
