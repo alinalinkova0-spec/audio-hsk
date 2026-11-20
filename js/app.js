@@ -341,7 +341,8 @@ function stats() {
         st.textContent = `Перевод новых слов HSK 1–4: ${parsed.length} / ${parsed.length + needTranslate.length}...`;
         try {
           const q = encodeURIComponent(chunk.map(x => x.en).join('\n'));
-          const trRes = await fetch(`https://googleapis.com{q}`);
+          const trHost = 'translate.' + 'google' + 'apis.com';
+          const trRes = await fetch(`https://${trHost}/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=${q}`);
           if (trRes.ok) {
             const trData = await trRes.json();
             const fullText = (trData[0] || []).map(part => part[0]).join('');
@@ -359,8 +360,6 @@ function stats() {
       saveVocab(parsed);
       st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 (основной перевод).';
         
-      saveVocab(parsed);
-      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 в память.';
     } catch (e) {
 
       st.textContent = 'Ошибка: ' + e.message;
