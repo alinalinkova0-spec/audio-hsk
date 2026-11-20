@@ -51,8 +51,7 @@ if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel(
 
   speechSynthesis.speak(u);
 }
-
-export function speak(text, { rate = 1 } = {}) {
+export function speak(text, { rate = 1, instant = false } = {}) {
   const clean = String(text || '').trim();
   if (!clean) return;
 
@@ -60,7 +59,15 @@ export function speak(text, { rate = 1 } = {}) {
     currentAudio.pause();
     currentAudio = null;
   }
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+
+  if (instant) {
+    speakTTS(clean, rate);
+    return;
+  }
+
+  if ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
+    speechSynthesis.cancel();
+  }
 
   playCount++;
 
@@ -79,4 +86,4 @@ export function speak(text, { rate = 1 } = {}) {
   } else {
     speakTTS(clean, rate);
   }
-}
+
