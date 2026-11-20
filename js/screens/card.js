@@ -135,16 +135,8 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
 
     speak(o.hanzi, { rate: 0.95 });
 
-     const wrongHint = (!ok && o.pinyin)
+      const wrongHint = (!ok && o.pinyin)
       ? `<div style="font-size:15px;color:#C83E37;margin-top:10px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">Твой выбор: ${o.hanzi} (${o.pinyin}) — ${o.ru || ''}</div>`
-      : '';
-
-    const curLvl = localStorage.getItem('hsk_lvl') || '1';
-    const testGoose = ok
-      ? `<div style="position:relative;width:100%;max-width:260px;margin:14px auto 0;">
-           <img src="./goose_win.jpg" alt="Победа!" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
-           <span style="position:absolute;right:18%;bottom:24%;transform:rotate(-8deg);font-family:'Inter',sans-serif;font-weight:800;font-size:15px;color:#C83E37;border:2px solid #C83E37;border-radius:6px;padding:1px 6px;background:rgba(247,243,235,0.85);pointer-events:none;">HSK ${curLvl}</span>
-         </div>`
       : '';
 
     reveal.hidden = false;
@@ -153,7 +145,6 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
       ${word.pinyin ? `<div style="font-size:20px;color:#1E7E5E;margin-top:6px;font-weight:500;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.pinyin}</div>` : ''}
       ${word.ru ? `<div style="font-size:19px;color:#231F20;margin-top:6px;font-weight:600;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.ru}</div>` : ''}
       ${wrongHint}
-      ${testGoose}
     `;
 
     reveal.querySelector('#again').onclick = () => speak(word.hanzi, { rate: 0.95 });
