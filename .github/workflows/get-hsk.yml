@@ -15,7 +15,7 @@ jobs:
             const fs = require("fs");
             const out = [];
             let id = 1;
-            for (const lvl of) {
+            for (const lvl of Array.of(1, 2, 3, 4)) {
               const arr = JSON.parse(fs.readFileSync(`tmp/wordlists/exclusive/new/${lvl}.min.json`, "utf8"));
               for (const w of arr) {
                 const f = (w.f && w.f[0]) || (w.forms && w.forms[0]) || {};
