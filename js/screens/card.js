@@ -101,7 +101,6 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
       <div class="answers" id="answers"></div>
       <div class="reveal" id="reveal" hidden>
         <div class="hanzi" id="hanzi"></div>
-        <button id="again" class="ghost" style="margin-top:12px;">↻ Прослушать ещё раз</button>
         <div class="grades">
           <button data-grade="0">Забыл</button>
           <button data-grade="1">Сложно</button>
@@ -172,7 +171,7 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
       if (b.textContent === word.hanzi) b.classList.add('ok');
     });
 
-    speak(o.hanzi, { rate: 0.95 });
+  speak(o.hanzi, { rate });
 
       const wrongHint = (!ok && o.pinyin)
       ? `<div style="font-size:15px;color:#C83E37;margin-top:10px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">Твой выбор: ${o.hanzi} (${o.pinyin}) — ${o.ru || ''}</div>`
@@ -186,7 +185,6 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
       ${wrongHint}
     `;
 
-    reveal.querySelector('#again').onclick = () => speak(word.hanzi, { rate: 0.95 });
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
         review(srsState, word.id, +g.dataset.grade);
