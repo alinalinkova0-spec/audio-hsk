@@ -1,32 +1,67 @@
-let zhVoice = null;
+let zhVoices = [];
+let voiceIdx = 0;
+let playCount = 0;
+let currentAudio = null;
 
-function pickVoice() {
-  if (!('speechSynthesis' in window)) return null;
-  const voices = speechSynthesis.getVoices();
-  return voices.find(v => v.lang === 'zh-CN')
-      || voices.find(v => v.lang.startsWith('zh'))
-      || null;
+function loadVoices() {
+  if (!('speechSynthesis' in window)) return [];
+  const all = speechSynthesis.getVoices();
+  const cn = all.filter(v => v.lang && v.lang.toLowerCase().startsWith('zh'));
+  if (cn.length) zhVoices = cn;
+  return zhVoices;
 }
 
 if ('speechSynthesis' in window) {
-  speechSynthesis.onvoiceschanged = () => { zhVoice = pickVoice(); };
-  zhVoice = pickVoice();
+  speechSynthesis.onvoiceschanged = loadVoices;
+  loadVoices();
+}
+
+function speakTTS(text, rate = 1) {
+  if (!('speechSynthesis' in window)) return;
+  if (!zhVoices.length) loadVoices();
+  speechSynthesis.cancel();
+
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = 'zh-CN';
+
+  if (zhVoices.length) {
+    const v = zhVoices[voiceIdx % zhVoices.length];
+    u.voice = v;
+    if (v.lang) u.lang = v.lang;
+  }
+
+  const pitches = [1.0, 0.92, 1.07, 0.96];
+  u.pitch = pitches[voiceIdx % pitches.length];
+  u.rate = rate;
+  voiceIdx++;
+
+  speechSynthesis.speak(u);
 }
 
 export function speak(text, { rate = 1 } = {}) {
-  if (!('speechSynthesis' in window)) {
-    alert('Браузер не поддерживает озвучку. Откройте в Chrome или Edge.');
-    return;
+  const clean = String(text || '').trim();
+  if (!clean) return;
+
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
   }
-  if (!zhVoice) zhVoice = pickVoice();
-  if (!zhVoice) {
-    alert('Китайский голос не найден. Откройте в Chrome или Edge.');
-    return;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+
+  playCount++;
+
+  const host = 'raw.' + 'github' + 'usercontent.com';
+  const mp3Url = `https://${host}/hugolpz/audio-cmn/master/64k/cmn-${encodeURIComponent(clean)}.mp3`;
+
+  const useNativeSpeaker = (rate === 1) && (playCount % 2 === 1) && clean.length <= 6;
+
+  if (useNativeSpeaker) {
+    const audio = new Audio(mp3Url);
+    currentAudio = audio;
+    audio.play().catch(() => {
+      if (currentAudio === audio) speakTTS(clean, rate);
+    });
+  } else {
+    speakTTS(clean, rate);
   }
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'zh-CN';
-  u.voice = zhVoice;
-  u.rate = rate;
-  speechSynthesis.speak(u);
 }
