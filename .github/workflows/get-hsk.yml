@@ -19,11 +19,12 @@ jobs:
               const arr = JSON.parse(fs.readFileSync(`tmp/wordlists/exclusive/new/${lvl}.min.json`, "utf8"));
               for (const w of arr) {
                 const f = (w.f && w.f[0]) || (w.forms && w.forms[0]) || {};
-                const tr = f.i || f.transcriptions || {};
+                const tr = Array.isArray(f.i) ? (f.i[0] || {}) : (f.i || f.transcriptions || {});
                 const m = f.m || f.meanings || [];
                 const hanzi = w.s || w.simplified;
                 const ru = m.slice(0, 3).join(", ");
-                if (hanzi && ru) out.push({ id: "h_" + (id++), hanzi, pinyin: tr.y || tr.pinyin || "", ru, level: lvl });
+                const pinyin = typeof tr === "string" ? tr : (tr.y || tr.pinyin || "");
+                if (hanzi && ru) out.push({ id: "h_" + (id++), hanzi, pinyin, ru, level: lvl });
               }
             }
             fs.writeFileSync("hsk.json", JSON.stringify(out));
@@ -36,5 +37,5 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add hsk.json
-          git commit -m "Update hsk.json 1-4"
-          git push
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update hsk.json 1-4" && git push)
+          
