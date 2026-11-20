@@ -239,7 +239,6 @@ function startMode(mode) {
     const queue = ids.map(id => sentences.find(s => s.id === id)).filter(Boolean);
     steps = queue.map(s => ({ type: 'phrase', sentence: s }));
   }
-
   let i = 0;
   function next() {
     if (i > 0) {
@@ -248,7 +247,18 @@ function startMode(mode) {
     }
     if (i >= steps.length) {
       const curLvl = Number(selectedLevel) || 1;
+
       const lvlDone = getLevelProgress(curLvl) >= 95;
+
+      if (lvlDone) {
+        app.innerHTML = `<section class="hero" style="padding:36px 0;">
+          <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
+            <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
+            <div style="position:absolute;left:46%;right:0;top:28%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;line-height:1.3;color:var(--jade);letter-spacing:0.2px;pointer-events:none;">
+              <div>УСПЕШНО ПРОЙДЕН</div>
+              <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK ${curLvl} 🎉</div>
+            </div>
+          </div>
           <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
             <a href="#/" class="cta">Перейти к следующему уровню</a>
           </div>
@@ -275,12 +285,23 @@ function startMode(mode) {
 }
 
 function stats() {
-      
+  const total = Object.keys(srs).length;
+  const learned = Object.values(srs).filter(s => s.reps >= 3).length;
+  app.innerHTML = `<section>
+    <h2>Статистика и офлайн-база</h2>
+    <p>Слов в базе устройства: <b>${allWords.length}</b></p>
+    <p>В повторении: <b>${total}</b></p>
+    <p>Уверенно на слух: <b>${learned}</b></p>
+
+    <div class="box">
+      <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
+      <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки словарь сохранится в браузере и будет работать офлайн.</p>
       <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Скачать словарь</button>
       <p id="fetchStatus" style="margin-top:10px;color:var(--accent);"></p>
     </div>
 
     <div class="box">
+    
       <h3>2. Загрузить свой словарь с русским переводом (.txt / .csv)</h3>
       <p style="color:var(--muted);font-size:14px;">Формат строк: <code>иероглиф;пиньинь;перевод;уровень</code></p>
       <input type="file" id="csvFile" accept=".txt,.csv" style="margin-top:8px;">
