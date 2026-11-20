@@ -139,9 +139,9 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
       root.innerHTML = `<section class="hero" style="padding:36px 0;">
         <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
           <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
-          <div style="position:absolute;right:2%;top:26%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:17px;line-height:1.3;color:var(--jade);letter-spacing:0.3px;pointer-events:none;">
+          <div style="position:absolute;right:0;top:27%;width:58%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:15px;line-height:1.3;color:var(--jade);letter-spacing:0.2px;pointer-events:none;">
             <div>УСПЕШНО ПРОЙДЕН</div>
-            <div style="color:var(--accent);font-size:21px;margin-top:2px;">HSK ${curLvl} 🎉</div>
+            <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK ${curLvl} 🎉</div>
           </div>
         </div>
         <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
