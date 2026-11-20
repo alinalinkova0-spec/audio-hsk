@@ -122,12 +122,16 @@ function home() {
 
   const filtered = getFilteredWords();
   const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
-  const filtered = getFilteredWords();
-  const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
   if (selectedLesson >= lessonCount) selectedLesson = 0;
 
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
     const from = idx * 50 + 1;
+    const to = Math.min((idx + 1) * 50, filtered.length);
+    const sel = idx === selectedLesson ? 'selected' : '';
+    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
+  }).join('');
+
+  const d = getDaily();
   const tasks = [
     { id: 'words', title: '1. Слова на слух (разгон 5–5–5)', done: d.words, goal: 15 },
     { id: 'blitz', title: '2. Молния: перевод за 3.5 сек', done: d.blitz, goal: 15 },
