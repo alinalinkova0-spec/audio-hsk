@@ -1,6 +1,6 @@
 import { words as defaultWords, sentences } from './data.js';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=35';
+import { renderCard, renderBlitzCard } from './screens/card.js?v=36';
 import { renderPhraseChoice } from './screens/segment.js?v=5';
 
 const VOCAB_KEY = 'hsk_vocab_v12';
@@ -111,9 +111,9 @@ function home() {
   const p3 = getLevelProgress(3);
   const p4 = getLevelProgress(4);
 
-  const unlocked2 = p1 >= 90;
-  const unlocked3 = unlocked2 && p2 >= 90;
-  const unlocked4 = unlocked3 && p3 >= 90;
+  const unlocked2 = p1 >= 95;
+  const unlocked3 = unlocked2 && p2 >= 95;
+  const unlocked4 = unlocked3 && p3 >= 95;
 
   if (selectedLevel === 'all' || (selectedLevel === '2' && !unlocked2) || (selectedLevel === '3' && !unlocked3) || (selectedLevel === '4' && !unlocked4)) {
     selectedLevel = '1';
@@ -158,9 +158,9 @@ function home() {
       <div class="controls">
         <select id="lvlSel">
           <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
-          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? '' : '🔒 '}HSK 2 (${p2}% / нужно 90% в HSK 1)</option>
-          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? '' : '🔒 '}HSK 3 (${p3}% / нужно 90% в HSK 2)</option>
-          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? '' : '🔒 '}HSK 4 (${p4}% / нужно 90% в HSK 3)</option>
+          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? '' : '🔒 '}HSK 2 (${p2}% / нужно 95% в HSK 1)</option>
+          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? '' : '🔒 '}HSK 3 (${p3}% / нужно 95% в HSK 2)</option>
+          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? '' : '🔒 '}HSK 4 (${p4}% / нужно 95% в HSK 3)</option>
         </select>
 
         <select id="lesSel">${lessonOptions}</select>
@@ -237,13 +237,13 @@ function startMode(mode) {
       addDaily(mode, steps.length);
 
       const curLvl = Number(selectedLevel) || 1;
-      const lvlDone = getLevelProgress(curLvl) >= 90;
+      const lvlDone = getLevelProgress(curLvl) >= 95;
 
       if (lvlDone) {
         app.innerHTML = `<section class="hero" style="padding:36px 0;">
           <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
             <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
-            <div style="position:absolute;right:0;top:27%;width:58%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:15px;line-height:1.3;color:var(--jade);letter-spacing:0.2px;pointer-events:none;">
+            <div style="position:absolute;left:46%;right:0;top:28%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;line-height:1.3;color:var(--jade);letter-spacing:0.2px;pointer-events:none;">
               <div>УСПЕШНО ПРОЙДЕН</div>
               <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK ${curLvl} 🎉</div>
             </div>
