@@ -33,7 +33,7 @@ if ('speechSynthesis' in window) {
 
 function speakTTS(text, rate = 1) {
   if (!('speechSynthesis' in window)) return;
-  if (!zhVoices.length) loadVoices();
+if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
   speechSynthesis.cancel();
 
   const u = new SpeechSynthesisUtterance(text);
