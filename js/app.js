@@ -241,10 +241,11 @@ function startMode(mode) {
 
   let i = 0;
   function next() {
-    if (i >= steps.length) {
+    if (i > 0) {
+      addDaily(mode, 1);
       saveSRS(srs);
-      addDaily(mode, steps.length);
-
+    }
+    if (i >= steps.length) {
       const curLvl = Number(selectedLevel) || 1;
       const lvlDone = getLevelProgress(curLvl) >= 95;
 
