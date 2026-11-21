@@ -158,46 +158,24 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
     });
   }
 }
-
 export function renderStoryCard(root, storiesList, progressMap, srsState, onDone) {
-  const LEVELS = Array.of(
-    { id: '1', label: 'HSK 1', needText: '' },
-    { id: '1-2', label: 'HSK 1–2', needText: 'нужно 67% в HSK 1' },
-    { id: '2', label: 'HSK 2', needText: 'нужно 95% в HSK 1' },
-    { id: '2-3', label: 'HSK 2–3', needText: 'нужно 67% в HSK 2' },
-    { id: '3', label: 'HSK 3', needText: 'нужно 95% в HSK 2' },
-    { id: '3-4', label: 'HSK 3–4', needText: 'нужно 67% в HSK 3' },
-    { id: '4', label: 'HSK 4', needText: 'нужно 95% в HSK 3' }
-  );
-
-  const isUnlocked = id => {
-    if (id === '1') return true;
-    if (id === '1-2') return progressMap.p1 >= 67;
-    if (id === '2') return progressMap.p1 >= 95;
-    if (id === '2-3') return progressMap.p1 >= 95 && progressMap.p2 >= 67;
-    if (id === '3') return progressMap.p1 >= 95 && progressMap.p2 >= 95;
-    if (id === '3-4') return progressMap.p1 >= 95 && progressMap.p2 >= 95 && progressMap.p3 >= 67;
-    if (id === '4') return progressMap.p1 >= 95 && progressMap.p2 >= 95 && progressMap.p3 >= 95;
-    return false;
-  };
-
-  let curLvl = localStorage.getItem('hsk_story_lvl') || '1';
-  if (!isUnlocked(curLvl)) curLvl = '1';
-  let curKind = localStorage.getItem('hsk_story_kind') || 'dialogue';
+  const userLvl = Number(localStorage.getItem('hsk_lvl') || localStorage.getItem('hsk_start_lvl') || 1);
+  let curKind = localStorage.getItem('hsk_story_kind') || 'all';
+  if (!Array.of('all', 'dialogue', 'text').includes(curKind)) curKind = 'all';
   let rate = Number(localStorage.getItem('hsk_phrase_speed'));
   if (rate !== 1.0 && rate !== 0.75) rate = 1.0;
 
   function render() {
-    let pool = storiesList.filter(x => x.level === curLvl && x.kind === curKind);
-    if (!pool.length) pool = storiesList.filter(x => x.kind === curKind);
-    if (!pool.length) pool = storiesList;
-    const item = pool.at(Math.floor(Math.random() * pool.length));
+    let lvlPool = storiesList.filter(x => {
+      const firstLvl = Number(String(x.level).split('-').at(0)) || 1;
+      return firstLvl <= userLvl;
+    });
+    if (!lvlPool.length) lvlPool = storiesList;
 
-    const lvlOptions = LEVELS.map(l => {
-      const ok = isUnlocked(l.id);
-      const sel = l.id === curLvl ? 'selected' : '';
-      return `<option value="${l.id}" ${sel} ${ok ? '' : 'disabled'}>${ok ? '' : '🔒 '}${l.label}${ok ? '' : ' (' + l.needText + ')'}</option>`;
-    }).join('');
+    let pool = curKind === 'all' ? lvlPool : lvlPool.filter(x => x.kind === curKind);
+    if (!pool.length) pool = lvlPool;
+
+    const item = pool.at(Math.floor(Math.random() * pool.length));
 
     const MODES = Array.of(
       { rate: 1.0, label: 'Обычно' },
@@ -206,13 +184,12 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
 
     root.innerHTML = `
       <div class="card">
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <select id="storyLvl" style="flex:1;padding:8px 10px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--fg);font-size:13px;font-weight:600;">
-            ${lvlOptions}
-          </select>
-          <select id="storyKind" style="flex:1;padding:8px 10px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--fg);font-size:13px;font-weight:600;">
-            <option value="dialogue" ${curKind === 'dialogue' ? 'selected' : ''}>💬 Диалог</option>
-            <option value="text" ${curKind === 'text' ? 'selected' : ''}>📖 Текст</option>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;">
+          <span style="font-size:13px;font-weight:700;color:var(--jade);">Уровень: HSK ${userLvl}</span>
+          <select id="storyKind" style="padding:8px 12px;border-radius:12px;border:1.5px solid var(--border);background:var(--card);color:var(--fg);font-size:13px;font-weight:600;">
+            <option value="all" ${curKind === 'all' ? 'selected' : ''}>📚 Всё вместе</option>
+            <option value="dialogue" ${curKind === 'dialogue' ? 'selected' : ''}>💬 Диалоги</option>
+            <option value="text" ${curKind === 'text' ? 'selected' : ''}>📖 Тексты</option>
           </select>
         </div>
 
@@ -231,6 +208,7 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
 
         <div id="reveal" class="reveal" hidden>
           <div id="storyTranscript" style="text-align:left;background:#F7F2E7;padding:12px;border-radius:14px;font-size:15px;line-height:1.55;"></div>
+          <div style="font-size:12px;color:var(--muted);margin-top:6px;">💡 Нажми на подчёркнутое слово в тексте, чтобы увидеть перевод и послушать</div>
           <button id="again" class="ghost" style="margin-top:10px;">↻ Прослушать ещё раз</button>
           <button id="nextStory" class="cta" style="margin-top:10px;width:100%;border:none;cursor:pointer;">Дальше →</button>
         </div>
@@ -241,11 +219,6 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
       speakDialog(payload, { rate });
     };
 
-    root.querySelector('#storyLvl').onchange = e => {
-      curLvl = e.target.value;
-      localStorage.setItem('hsk_story_lvl', curLvl);
-      render();
-    };
     root.querySelector('#storyKind').onchange = e => {
       curKind = e.target.value;
       localStorage.setItem('hsk_story_kind', curKind);
@@ -298,19 +271,22 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
         const linesHtml = item.lines.map(l => {
           const prefix = item.kind === 'dialogue' ? `<b>${l.speaker}:</b> ` : '';
           return `<div style="margin-bottom:8px;">
-            <div style="font-size:18px;font-weight:600;">${prefix}${l.hanzi}</div>
+            <div style="font-size:18px;font-weight:600;">${prefix}${makeClickableHanzi(l.hanzi)}</div>
             <div style="font-size:14px;color:#1E7E5E;">${l.pinyin}</div>
             <div style="font-size:14px;color:#4B5563;">${l.ru}</div>
           </div>`;
         }).join('');
 
         reveal.hidden = false;
-        reveal.querySelector('#storyTranscript').innerHTML = `
+        const transcriptBox = reveal.querySelector('#storyTranscript');
+        transcriptBox.innerHTML = `
           ${linesHtml}
           <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:14px;color:var(--accent);font-weight:600;">
             💡 ${item.note}
           </div>
         `;
+        bindHanziTaps(transcriptBox);
+
         reveal.querySelector('#again').onclick = playAudio;
         reveal.querySelector('#nextStory').onclick = onDone;
       };
@@ -320,3 +296,4 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
 
   render();
 }
+
