@@ -145,6 +145,7 @@ function router() {
   else if (h === 'placement') startPlacementTest();
   else if (h === 'levelup') startLevelUpTest();
   else if (h === 'stats') stats();
+  else if (h === 'settings') settings();
   else home();
 }
 function getFilteredWords() {
@@ -330,7 +331,6 @@ const filtered = getFilteredWords();
           <img src="./goose_mood.jpg" alt="Задумчивый гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
         </div>
       </section>`;
-
      let moodLocked = false;
     app.querySelectorAll('[data-mood]').forEach(btn => {
       btn.onclick = async () => {
@@ -1128,61 +1128,197 @@ async function startLevelUpTest() {
   }
 }
 function stats() {
-  const total = Object.keys(srs).length;
-  const learned = Object.values(srs).filter(s => s.reps >= 3).length;
+  const inProgress = Object.values(srs).filter(s => s.reps >= 1).length;
+  const confident = Object.values(srs).filter(s => s.reps >= 3).length;
+  let dictFilter = 'learned';
+  let dictQuery = '';
+
+  app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
+    <h2 style="margin-top:0;">Словарь и прогресс</h2>
+    <div class="box" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;padding:12px;">
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--fg);">${allWords.length}</div>
+        <div style="font-size:12px;color:var(--muted);">В базе</div>
+      </div>
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--beak);">${inProgress}</div>
+        <div style="font-size:12px;color:var(--muted);">В повторении</div>
+      </div>
+      <div>
+        <div style="font-size:20px;font-weight:700;color:var(--jade);">${confident}</div>
+        <div style="font-size:12px;color:var(--muted);">Уверенно</div>
+      </div>
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <div style="display:flex;gap:6px;margin-bottom:10px;">
+        <button data-dfilter="learned" class="ghost" style="flex:1;padding:7px 6px;font-size:13px;border-color:var(--jade);background:#EDF5F0;font-weight:600;">Изученные (${inProgress})</button>
+        <button data-dfilter="all" class="ghost" style="flex:1;padding:7px 6px;font-size:13px;">Все слова (${allWords.length})</button>
+      </div>
+      <input type="search" id="dictSearch" placeholder="Поиск по иероглифу, пиньиню или переводу..." style="width:100%;padding:9px 12px;border-radius:12px;border:1.5px solid var(--border);font-size:14px;margin-bottom:10px;">
+      <div id="dictList" style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;"></div>
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <h3 style="margin-top:0;font-size:16px;">Офлайн-база слов</h3>
+      <p style="color:var(--muted);font-size:13px;">Скачай полный словарь HSK 1–4 в память или добавь свой список слов из файла <b>.txt</b> / <b>.csv</b>.</p>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
+        <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin:0;text-align:center;">Скачать полный словарь HSK 1–4</button>
+
+        <details style="background:#FAFBF9;border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:13px;">
+          <summary style="cursor:pointer;font-weight:600;color:var(--jade);">Как подготовить и загрузить свой файл?</summary>
+          <div style="margin-top:8px;line-height:1.5;color:var(--fg);">
+            <div><b>1.</b> Создай файл в «Блокноте», «Заметках» или Excel и сохрани его в формате <b>.txt</b> или <b>.csv</b> (кодировка UTF-8).</div>
+            <div style="margin-top:4px;"><b>2.</b> Запиши каждое слово с новой строки через точку с запятой:</div>
+            <pre style="background:#F0F4F1;padding:8px;border-radius:8px;margin:6px 0;font-size:12px;overflow-x:auto;">你好;nǐ hǎo;привет;1
+谢谢;xièxie;спасибо;1
+学习;xuéxí;учиться;2</pre>
+            <div><b>3.</b> Пиньинь и цифру уровня (1–4) можно не указывать (например: <code>苹果;;яблоко</code> — по умолчанию поставится 4 уровень).</div>
+            <div style="margin-top:4px;color:var(--beak);">⚠️ Загрузка своего файла заменит текущий словарь в памяти устройства.</div>
+          </div>
+        </details>
+
+        <label class="ghost" style="text-align:center;cursor:pointer;font-size:14px;font-weight:600;">
+          📂 Выбрать файл (.txt / .csv)
+          <input type="file" id="csvFile" accept=".txt,.csv" style="display:none;">
+        </label>
+      </div>
+      <p id="fetchStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
+    </div>
+  </section>`;
+  const listEl = app.querySelector('#dictList');
+  const renderDict = () => {
+    const q = dictQuery.trim().toLowerCase();
+    let items = dictFilter === 'learned'
+      ? allWords.filter(w => srs[w.id] && srs[w.id].reps >= 1)
+      : allWords;
+    if (q) {
+      items = items.filter(w =>
+        (w.hanzi && w.hanzi.toLowerCase().includes(q)) ||
+        (w.pinyin && w.pinyin.toLowerCase().includes(q)) ||
+        (w.ru && w.ru.toLowerCase().includes(q))
+      );
+    }
+    if (!items.length) {
+      listEl.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:13px;padding:16px 0;">Пока пусто — пройди несколько слов в «Заданиях» или переключись на «Все слова»</div>`;
+      return;
+    }
+    const shown = items.slice(0, 80);
+    listEl.innerHTML = shown.map(w => {
+      const reps = (srs[w.id] && srs[w.id].reps) || 0;
+      const mark = reps >= 3 ? '★' : (reps >= 1 ? '✓' : '');
+      return `<button data-say="${w.hanzi}" style="display:flex;justify-content:space-between;align-items:center;padding:9px 12px;background:#FAFBF9;border:1px solid var(--border);border-radius:12px;cursor:pointer;text-align:left;gap:8px;">
+        <div>
+          <span style="font-size:17px;font-weight:700;color:var(--fg);">${w.hanzi}</span>
+          <span style="font-size:13px;color:var(--jade);margin-left:6px;">${w.pinyin || ''}</span>
+          <div style="font-size:13px;color:var(--muted);margin-top:2px;">${w.ru}</div>
+        </div>
+        <span style="font-size:13px;color:var(--jade);font-weight:700;flex-shrink:0;">${mark} 🔊</span>
+      </button>`;
+    }).join('') + (items.length > 80 ? `<div style="text-align:center;font-size:12px;color:var(--muted);padding:6px;">Показаны первые 80 из ${items.length} слов — уточни поиск</div>` : '');
+
+    listEl.querySelectorAll('[data-say]').forEach(b => {
+      b.onclick = () => speak(b.dataset.say, { rate: 0.95, instant: true });
+    });
+  };
+
+  app.querySelectorAll('[data-dfilter]').forEach(btn => {
+    btn.onclick = () => {
+      dictFilter = btn.dataset.dfilter;
+      app.querySelectorAll('[data-dfilter]').forEach(x => {
+        const active = x.dataset.dfilter === dictFilter;
+        x.style.borderColor = active ? 'var(--jade)' : '';
+        x.style.background = active ? '#EDF5F0' : '';
+        x.style.fontWeight = active ? '600' : '500';
+      });
+      renderDict();
+    };
+  });
+
+  app.querySelector('#dictSearch').oninput = e => {
+    dictQuery = e.target.value;
+    renderDict();
+  };
+
+  renderDict();
+
+  app.querySelector('#fetchHsk').onclick = async () => {
+    const st = app.querySelector('#fetchStatus');
+    try {
+      await downloadLevelsUpTo(4, st);
+      renderDict();
+    } catch (e) {
+      st.textContent = 'Ошибка: ' + e.message;
+    }
+  };
+
+  app.querySelector('#csvFile').onchange = e => {
+    const file = e.target.files && e.target.files.item(0);
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
+      const custom = lines.map((line, idx) => {
+        const parts = line.split(/[;\t]/);
+        const hanzi = (parts.at(0) || '').trim();
+        const pinyin = (parts.at(1) || '').trim();
+        const ru = (parts.at(2) || '').trim();
+        const lvl = Number(parts.at(3)) || 4;
+        return { id: 'c_' + (idx + 1), hanzi, pinyin, ru, level: lvl };
+      }).filter(w => w.hanzi && w.ru);
+      if (custom.length) {
+        saveVocab(custom);
+        alert('Загружено ' + custom.length + ' слов в офлайн-память!');
+        stats();
+      }
+    };
+    reader.readAsText(file, 'utf-8');
+  };
+}
+function settings() {
   const remOn = localStorage.getItem('hsk_rem_on') === '1';
   const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
-   app.innerHTML = `<section>
-    <h2>Статистика и офлайн-база</h2>
-    <p>Слов в базе устройства: <b>${allWords.length}</b></p>
-    <p>В повторении: <b>${total}</b></p>
-    <p>Уверенно на слух: <b>${learned}</b></p>
+  app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
+    <h2 style="margin-top:0;">Настройки</h2>
+
     <div class="box">
-      <h3>🔔 Ежедневное напоминание</h3>
-      <p style="color:var(--muted);font-size:14px;">Напомнит о занятиях, если план на сегодня ещё не выполнен. Для iPhone предварительно добавь сайт на экран <b>«Домой»</b>.</p>
-      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
-          <input type="checkbox" id="remToggle" ${remOn ? 'checked' : ''} style="width:18px;height:18px;">
-          Включить
-        </label>
-        <input type="time" id="remTime" value="${remTime}" style="padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:15px;">
-        <button id="testNotify" class="ghost" style="font-size:13px;padding:6px 12px;">Проверить</button>
+      <h3 style="margin-top:0;font-size:16px;">🎯 Мой уровень HSK</h3>
+      <p style="color:var(--muted);font-size:13px;">Переключись на другой уровень или пройди входной тест заново:</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">
+        <button data-set-lvl="1" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '1' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 1</button>
+        <button data-set-lvl="2" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '2' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 2</button>
+        <button data-set-lvl="3" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '3' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 3</button>
+        <button data-set-lvl="4" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '4' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 4</button>
       </div>
-      <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
-    </div>
-    <div class="box">
-      <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
-      <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки словарь сохранится в браузере и будет работать офлайн.</p>
-      <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Скачать словарь</button>
-      <p id="fetchStatus" style="margin-top:10px;color:var(--accent);"></p>
-    </div>
-    <div class="box">
-      <h3>2. Загрузить свой словарь с русским переводом (.txt / .csv)</h3>
-      <p style="color:var(--muted);font-size:14px;">Формат строк: <code>иероглиф;пиньинь;перевод;уровень</code></p>
-      <input type="file" id="csvFile" accept=".txt,.csv" style="margin-top:8px;">
-    </div>
-        <div class="box">
-      <h3>🎯 Мой уровень HSK</h3>
-      <p style="color:var(--muted);font-size:14px;">Хочешь переключиться на другой уровень или заново пройти входной тест?</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <button data-set-lvl="1" class="ghost" style="font-size:14px;">HSK 1</button>
-        <button data-set-lvl="2" class="ghost" style="font-size:14px;">HSK 2</button>
-        <button data-set-lvl="3" class="ghost" style="font-size:14px;">HSK 3</button>
-        <button data-set-lvl="4" class="ghost" style="font-size:14px;">HSK 4</button>
-      </div>
-      <div style="margin-top:10px;">
-        <a href="#/placement" class="ghost" style="font-size:14px;display:inline-block;">🔄 Пройти входной тест заново</a>
+        <a href="#/placement" class="ghost" style="flex:1;text-align:center;font-size:13px;">🔄 Входной тест заново</a>
+        <button id="resetMoodBtn" class="ghost" style="flex:1;font-size:13px;">🦆 Сменить настроение</button>
       </div>
       <p id="lvlSwitchStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
     </div>
-    <div class="box">
-      <h3>💬 Поддержка и обратная связь</h3>
-      <p style="color:var(--muted);font-size:14px;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
-      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:10px;display:inline-block;font-size:14px;">✈️ Написать в поддержку (@alinaLinka20)</a>
+
+    <div class="box" style="margin-top:14px;">
+      <h3 style="margin-top:0;font-size:16px;">🔔 Ежедневная напоминалка</h3>
+      <p style="color:var(--muted);font-size:13px;">Напомнит о занятиях, если план на сегодня ещё не выполнен. На iPhone предварительно добавь сайт на экран <b>«Домой»</b>.</p>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="remToggle" ${remOn ? 'checked' : ''} style="width:18px;height:18px;">
+          Включить
+        </label>
+        <input type="time" id="remTime" value="${remTime}" style="padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;">
+        <button id="testNotify" class="ghost" style="font-size:13px;padding:6px 10px;">Проверить</button>
+      </div>
+      <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <h3 style="margin-top:0;font-size:16px;">💬 Поддержка</h3>
+      <p style="color:var(--muted);font-size:13px;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
+      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:8px;display:block;text-align:center;font-size:14px;">✈️ Написать в поддержку (@alinaLinka20)</a>
     </div>
   </section>`;
-  const remStatus = app.querySelector('#remStatus');
-    app.querySelectorAll('[data-set-lvl]').forEach(btn => {
+
+  app.querySelectorAll('[data-set-lvl]').forEach(btn => {
     btn.onclick = async () => {
       const target = Number(btn.dataset.setLvl);
       const stEl = app.querySelector('#lvlSwitchStatus');
@@ -1195,6 +1331,13 @@ function stats() {
       location.hash = '#/';
     };
   });
+
+  app.querySelector('#resetMoodBtn').onclick = () => {
+    localStorage.removeItem(getTodayMoodKey());
+    location.hash = '#/';
+  };
+
+  const remStatus = app.querySelector('#remStatus');
   app.querySelector('#remToggle').onchange = async e => {
     if (e.target.checked) {
       if (!('Notification' in window)) {
@@ -1222,6 +1365,7 @@ function stats() {
       remStatus.textContent = 'Время напоминания обновлено: ' + e.target.value;
     }
   };
+
   app.querySelector('#testNotify').onclick = async () => {
     if (!('Notification' in window)) {
       remStatus.textContent = 'Уведомления недоступны в этом режиме.';
@@ -1237,133 +1381,6 @@ function stats() {
     } else {
       remStatus.textContent = 'Разреши уведомления в настройках браузера.';
     }
-  };
-  app.querySelector('#fetchHsk').onclick = async () => {
-    const st = app.querySelector('#fetchStatus');
-    st.textContent = 'Загрузка базы HSK 1–4...';
-    try {
-      const host = 'raw.' + 'github' + 'usercontent.com';
-      const ruUrl = 'https://' + host + '/LiudmilaLV/json_hsk/master/hsk.json';
-      const [resNew, resRu] = await Promise.all([
-        fetch('./hsk.json?v=' + Date.now()),
-        fetch(ruUrl).catch(() => null)
-      ]);
-      if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
-      const raw = await resNew.json();
-      const shortRu = str => {
-        const firstMeaning = String(str || '')
-          .split(/[,;/(]/)
-          .map(s => s.trim())
-          .find(Boolean) || '';
-        return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
-      };
-      const ruMap = new Map();
-      if (resRu && resRu.ok) {
-        const ruList = await resRu.json();
-        ruList.forEach(w => {
-          if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
-            ruMap.set(w.hanzi, {
-              ru: shortRu(w.translations.rus.at(0)),
-              pinyin: w.pinyin || ''
-            });
-          }
-        });
-      }
-
-      const parsed = [];
-      const needTranslate = [];
-
-      for (const item of raw) {
-        if (item.hanzi && item.level) {
-          const hanzi = String(item.hanzi).trim();
-          const newLvl = Number(item.level);
-          if (!hanzi || !Array.of(1, 2, 3, 4).includes(newLvl)) continue;
-          const found = ruMap.get(hanzi);
-          const pinyin = String(item.pinyin || (found && found.pinyin) || '').trim();
-          if (found && found.ru && /[а-яё]/i.test(found.ru)) {
-            parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru: found.ru, level: newLvl });
-          } else {
-            const en = String(item.ru || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
-            if (en) needTranslate.push({ hanzi, pinyin, en, level: newLvl });
-          }
-          continue;
-        }
-
-        const lvls = item.l || item.level || Array.of();
-        const newLvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n));
-        if (!newLvl) continue;
-        const forms = item.f || item.forms || Array.of();
-        const form = forms.at(0) || {};
-        const hanzi = item.s || item.simplified;
-        if (!hanzi) continue;
-
-        const found = ruMap.get(hanzi);
-        const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
-        const pinyin =
-          (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) ||
-          form.p ||
-          (found && found.pinyin) ||
-          '';
-
-        if (found && found.ru && /[а-яё]/i.test(found.ru)) {
-          parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru: found.ru, level: newLvl });
-        } else {
-          const meanings = form.m || form.meanings || Array.of();
-          const en = String(meanings.at(0) || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
-          if (en) needTranslate.push({ hanzi, pinyin, en, level: newLvl });
-        }
-      }
-
-      const BATCH = 40;
-      for (let i = 0; i < needTranslate.length; i += BATCH) {
-        const chunk = needTranslate.slice(i, i + BATCH);
-        st.textContent = `Перевод новых слов HSK 1–4: ${parsed.length} / ${parsed.length + needTranslate.length}...`;
-        try {
-          const q = encodeURIComponent(chunk.map(x => x.en).join('\n'));
-          const trHost = 'translate.' + 'google' + 'apis.com';
-          const trRes = await fetch(`https://${trHost}/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=${q}`);
-          if (trRes.ok) {
-            const trData = await trRes.json();
-            const fullText = (trData.at(0) || []).map(part => part.at(0)).join('');
-            const lines = fullText.split('\n');
-            chunk.forEach((item, idx) => {
-              const ru = shortRu(lines[idx]);
-              if (ru && /[а-яё]/i.test(ru)) {
-                parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi: item.hanzi, pinyin: item.pinyin, ru, level: item.level });
-              }
-            });
-          }
-        } catch {}
-      }
-
-      saveVocab(parsed);
-      st.textContent = 'Готово! Сохранено ' + parsed.length + ' слов нового HSK 1–4 (основной перевод).';
-    } catch (e) {
-      st.textContent = 'Ошибка: ' + e.message;
-    }
-  };
-
-  app.querySelector('#csvFile').onchange = e => {
-    const file = e.target.files && e.target.files.item(0);
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const lines = String(reader.result).split(/\r?\n/).filter(Boolean);
-      const custom = lines.map((line, idx) => {
-        const parts = line.split(/[;\t]/);
-        const hanzi = (parts.at(0) || '').trim();
-        const pinyin = (parts.at(1) || '').trim();
-        const ru = (parts.at(2) || '').trim();
-        const lvl = Number(parts.at(3)) || 4;
-        return { id: 'c_' + (idx + 1), hanzi, pinyin, ru, level: lvl };
-      }).filter(w => w.hanzi && w.ru);
-      if (custom.length) {
-        saveVocab(custom);
-        alert('Загружено ' + custom.length + ' слов в офлайн-память!');
-        stats();
-      }
-    };
-    reader.readAsText(file, 'utf-8');
   };
 }
 
