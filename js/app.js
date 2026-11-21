@@ -42,14 +42,12 @@ function getTodayMoodKey() {
 function getTodayMood() {
   return localStorage.getItem(getTodayMoodKey()) || '';
 }
-
 function setTodayMood(mood) {
   localStorage.setItem(getTodayMoodKey(), mood);
   const prev = Number(localStorage.getItem('hsk_tired_streak') || '0');
   const next = mood === 'tired' ? prev + 1 : 0;
   localStorage.setItem('hsk_tired_streak', String(next));
 }
-
 function getMainWeakness() {
   try {
     const data = JSON.parse(localStorage.getItem('hsk_weakness_v1') || '{}');
@@ -92,7 +90,6 @@ function getDynamicPlan() {
       )
     };
   }
-
   if (mood === 'tired') {
     const tiredDays = Number(localStorage.getItem('hsk_tired_streak') || '1');
     const stepUp = tiredDays >= 3;
@@ -110,7 +107,6 @@ function getDynamicPlan() {
       )
     };
   }
-
   const rotateTask = dayNum % 2 === 0
     ? { id: 'stories', title: '3. Диалоги и тексты', goal: 2 }
     : { id: 'phrases', title: '3. Фразы', goal: 5 };
@@ -369,7 +365,6 @@ const filtered = getFilteredWords();
         <select id="lesSel">${lessonOptions}</select>
       </div>
       ${levelUpBanner}
-
       <div style="width:100%;max-width:420px;margin:14px auto 0;display:flex;flex-direction:column;gap:10px;">
         <div style="text-align:left;font-size:12px;color:var(--jade);font-weight:600;padding:0 6px;">${plan.focusText}</div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 6px;">
