@@ -2,6 +2,7 @@ import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard } from './screens/card.js?v=48';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=10';
+import { speak } from './audio.js?v=3';
 
 const VOCAB_KEY = 'hsk_vocab_v13';
 
@@ -66,6 +67,7 @@ function router() {
   else if (h === 'blitz') startMode('blitz');
   else if (h === 'phrases') startMode('phrases');
   else if (h === 'stories') startMode('stories');
+  else if (h === 'placement') startPlacementTest();
   else if (h === 'stats') stats();
   else home();
 }
@@ -561,6 +563,211 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
   saveVocab(parsed);
   if (stEl) stEl.textContent = `Готово! Загружено ${parsed.length} слов (HSK 1–${maxLvl}).`;
   return parsed;
+}
+
+async function startPlacementTest() {
+  app.innerHTML = `<section class="hero" style="padding:32px 16px;">
+    <h2>Подготовка теста... 🎯</h2>
+    <p id="plLoad" style="color:var(--muted);">Выбираем 24 слова (от лёгких к сложным по HSK 1–4)...</p>
+  </section>`;
+
+  try {
+    const host = 'raw.' + 'github' + 'usercontent.com';
+    const ruUrl = 'https://' + host + '/LiudmilaLV/json_hsk/master/hsk.json';
+    const [resNew, resRu] = await Promise.all([
+      fetch('./hsk.json?v=' + Date.now()),
+      fetch(ruUrl).catch(() => null)
+    ]);
+    if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
+    const raw = await resNew.json();
+
+    const shortRu = str => {
+      const firstMeaning = String(str || '')
+        .split(/[,;/(]/)
+        .map(s => s.trim())
+        .find(Boolean) || '';
+      return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
+    };
+
+    const ruMap = new Map();
+    if (resRu && resRu.ok) {
+      const ruList = await resRu.json();
+      ruList.forEach(w => {
+        if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
+          ruMap.set(w.hanzi, {
+            ru: shortRu(w.translations.rus.at(0)),
+            pinyin: w.pinyin || ''
+          });
+        }
+      });
+    }
+
+    const byLvl = { 1: [], 2: [], 3: [], 4: [] };
+    for (const item of raw) {
+      let hanzi = '';
+      let lvl = 0;
+      let pinyin = '';
+      let en = '';
+
+      if (item.hanzi && item.level) {
+        hanzi = String(item.hanzi).trim();
+        lvl = Number(item.level);
+        pinyin = String(item.pinyin || '').trim();
+        en = String(item.ru || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
+      } else {
+        const lvls = item.l || item.level || Array.of();
+        lvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n)) || 0;
+        const forms = item.f || item.forms || Array.of();
+        const form = forms.at(0) || {};
+        hanzi = item.s || item.simplified || '';
+        const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
+        pinyin = (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) || form.p || '';
+        const meanings = form.m || form.meanings || Array.of();
+        en = String(meanings.at(0) || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
+      }
+
+      if (!hanzi || !byLvl[lvl]) continue;
+      const found = ruMap.get(hanzi);
+      const ru = found && found.ru && /[а-яё]/i.test(found.ru) ? found.ru : '';
+      byLvl[lvl].push({ hanzi, pinyin: pinyin || (found && found.pinyin) || '', ru, en, level: lvl });
+    }
+
+    const testQueue = [];
+    const pickTwo = arr => arr.sort(() => Math.random() - 0.5).slice(0, 2);
+
+    for (const lvl of Array.of(1, 2, 3, 4)) {
+      const list = byLvl[lvl];
+      const third = Math.max(2, Math.floor(list.length / 3));
+      const easy = pickTwo(list.slice(0, third)).map(w => ({ ...w, diff: 'easy' }));
+      const mid = pickTwo(list.slice(third, third * 2)).map(w => ({ ...w, diff: 'medium' }));
+      const hard = pickTwo(list.slice(third * 2)).map(w => ({ ...w, diff: 'hard' }));
+      testQueue.push(...easy, ...mid, ...hard);
+    }
+
+    const needTr = testQueue.filter(w => !w.ru && w.en);
+    if (needTr.length) {
+      try {
+        const q = encodeURIComponent(needTr.map(x => x.en).join('\n'));
+        const trHost = 'translate.' + 'google' + 'apis.com';
+        const trRes = await fetch(`https://${trHost}/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=${q}`);
+        if (trRes.ok) {
+          const trData = await trRes.json();
+          const lines = (trData.at(0) || []).map(part => part.at(0)).join('').split('\n');
+          needTr.forEach((item, idx) => {
+            const ru = shortRu(lines[idx]);
+            if (ru && /[а-яё]/i.test(ru)) item.ru = ru;
+          });
+        }
+      } catch {}
+    }
+
+    const validQueue = testQueue.filter(w => w.ru);
+    const allRuPool = Array.from(new Set(validQueue.map(w => w.ru)));
+
+    let idx = 0;
+    const statsByLvl = {
+      1: { ok: 0, hardOk: 0 },
+      2: { ok: 0, hardOk: 0 },
+      3: { ok: 0, hardOk: 0 },
+      4: { ok: 0, hardOk: 0 }
+    };
+
+    function renderQuestion() {
+      if (idx >= validQueue.length) {
+        let detected = 1;
+        for (const lvl of Array.of(1, 2, 3)) {
+          if (statsByLvl[lvl].ok >= 5 && statsByLvl[lvl].hardOk >= 1) {
+            detected = lvl + 1;
+          } else {
+            break;
+          }
+        }
+
+        app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
+          <h1>Тест завершён! 🎯</h1>
+          <div class="box" style="text-align:left;margin:14px 0;font-size:14px;line-height:1.7;">
+            <div>HSK 1: <b>${statsByLvl[1].ok}/6</b> верно</div>
+            <div>HSK 2: <b>${statsByLvl[2].ok}/6</b> верно</div>
+            <div>HSK 3: <b>${statsByLvl[3].ok}/6</b> верно</div>
+            <div>HSK 4: <b>${statsByLvl[4].ok}/6</b> верно</div>
+          </div>
+          <p style="font-size:16px;font-weight:700;color:var(--jade);">Рекомендуемый старт: HSK ${detected}</p>
+          <p id="plSaveStatus" style="font-size:14px;color:var(--accent);font-weight:600;margin-top:8px;">Загружаем словарь HSK 1–${detected}...</p>
+        </section>`;
+
+        downloadLevelsUpTo(detected, app.querySelector('#plSaveStatus')).then(() => {
+          localStorage.setItem('hsk_start_lvl', String(detected));
+          selectedLevel = String(detected);
+          selectedLesson = 0;
+          localStorage.setItem('hsk_lvl', selectedLevel);
+          localStorage.setItem('hsk_les', '0');
+          history.replaceState(null, '', '#/');
+          home();
+        });
+        return;
+      }
+
+      const cur = validQueue[idx];
+      const distractors = allRuPool
+        .filter(r => r !== cur.ru)
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 3);
+      const options = Array.of(cur.ru, ...distractors).sort(() => Math.random() - 0.5);
+
+      app.innerHTML = `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
+          <span style="color:var(--accent);font-weight:700;">🎯 Определение уровня</span>
+          <span style="color:var(--muted);">${idx + 1} / ${validQueue.length}</span>
+        </div>
+        <div class="card-audio" style="flex-direction:column;align-items:center;gap:10px;">
+          <button id="plPlay" class="big-play" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button id="plRepeat" class="ghost" style="font-size:14px;padding:7px 14px;">🔊 Повторить слово</button>
+        </div>
+        <p class="prompt">Выбери перевод услышанного слова</p>
+        <div id="plAnswers" class="answers" style="grid-template-columns:1fr;"></div>
+      </div>`;
+
+      const playWord = () => speak(cur.hanzi, { rate: 0.95, instant: true });
+      app.querySelector('#plPlay').onclick = playWord;
+      app.querySelector('#plRepeat').onclick = playWord;
+      playWord();
+
+      const ansBox = app.querySelector('#plAnswers');
+      let locked = false;
+      options.forEach(opt => {
+        const b = document.createElement('button');
+        b.className = 'answer';
+        b.style.fontSize = '16px';
+        b.style.padding = '13px';
+        b.textContent = opt;
+        b.onclick = () => {
+          if (locked) return;
+          locked = true;
+          const ok = opt === cur.ru;
+          b.classList.add(ok ? 'ok' : 'bad');
+          if (!ok) {
+            Array.from(ansBox.children).forEach(x => {
+              if (x.textContent === cur.ru) x.classList.add('ok');
+            });
+          } else {
+            statsByLvl[cur.level].ok += 1;
+            if (cur.diff === 'hard') statsByLvl[cur.level].hardOk += 1;
+          }
+          idx += 1;
+          setTimeout(renderQuestion, 550);
+        };
+        ansBox.appendChild(b);
+      });
+    }
+
+    renderQuestion();
+  } catch (e) {
+    app.innerHTML = `<section class="hero"><h2>Не удалось загрузить тест</h2>
+      <p style="color:var(--accent);">${e.message}</p>
+      <a href="#/" class="cta">Назад</a></section>`;
+  }
 }
 
 function stats() {
