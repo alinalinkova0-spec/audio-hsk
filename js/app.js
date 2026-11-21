@@ -741,11 +741,12 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
 }
 
  async function startPlacementTest() {
-  app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:28px 16px;">
-    <h2 style="margin:0 0 6px;">Подготовка теста...</h2>
-    <p id="plLoad" style="color:var(--muted);margin:0 0 12px;min-height:20px;"></p>
-    <div style="width:240px;height:245px;margin:0 auto;overflow:hidden;position:relative;">
-      <img src="./goose_test.jpg" alt="Подготовка теста" style="width:185%;max-width:none;height:auto;margin-left:-56%;margin-top:-20%;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+  app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:32px 16px;text-align:center;">
+    <h2 style="margin:0 0 8px;font-size:22px;">Подготовка теста...</h2>
+    <p id="plLoad" style="color:var(--muted);margin:0 0 12px;font-size:14px;min-height:20px;"></p>
+    <div style="width:260px;height:260px;margin:0 auto;position:relative;mix-blend-mode:multiply;">
+      <img src="./goose_test.jpg" alt="Подготовка теста" style="width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;display:block;">
+      <div style="position:absolute;top:24%;left:26%;width:15%;height:34%;background:#ffffff;pointer-events:none;"></div>
     </div>
   </section>`;
 
