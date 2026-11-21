@@ -320,6 +320,7 @@ export function mountAudioControl(container, onPlayFn, { autoPlay = true } = {})
   };
 }
 let sfxCtx = null;
+let sfxBusyUntil = 0;
 
 export function playFeedback(ok) {
   if (localStorage.getItem('hsk_sfx_off') === '1') return;
@@ -331,8 +332,10 @@ export function playFeedback(ok) {
     if (sfxCtx.state === 'suspended') sfxCtx.resume();
 
     const now = sfxCtx.currentTime;
+    if (now < sfxBusyUntil) return;
 
     if (theme === 'guzheng') {
+      sfxBusyUntil = now + 0.26;
       const notes = ok ? [523.25, 659.25, 783.99] : [293.66, 220.0];
       notes.forEach((freq, i) => {
         const t = now + i * 0.055;
@@ -340,9 +343,9 @@ export function playFeedback(ok) {
         const gain = sfxCtx.createGain();
         osc.type = ok ? 'triangle' : 'sawtooth';
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.001, t);
-        gain.gain.exponentialRampToValueAtTime(ok ? 0.1 : 0.06, t + 0.008);
-        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.24);
+        gain.gain.setValueAtTime(0.0008, t);
+        gain.gain.exponentialRampToValueAtTime(ok ? 0.068 : 0.042, t + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.24);
         osc.connect(gain);
         gain.connect(sfxCtx.destination);
         osc.start(t);
@@ -352,24 +355,43 @@ export function playFeedback(ok) {
     }
 
     if (theme === 'bell') {
-      const freqs = ok ? [587.33, 880.0] : [220.0];
-      freqs.forEach((freq, i) => {
-        const osc = sfxCtx.createOscillator();
-        const gain = sfxCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now);
-        gain.gain.setValueAtTime(0.001, now);
-        gain.gain.exponentialRampToValueAtTime(ok ? (i === 0 ? 0.11 : 0.05) : 0.12, now + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0005, now + (ok ? 0.45 : 0.35));
-        osc.connect(gain);
-        gain.connect(sfxCtx.destination);
-        osc.start(now);
-        osc.stop(now + 0.48);
-      });
+      if (ok) {
+        sfxBusyUntil = now + 0.48;
+        [587.33, 880.0].forEach((freq, i) => {
+          const osc = sfxCtx.createOscillator();
+          const gain = sfxCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          gain.gain.setValueAtTime(0.0008, now);
+          gain.gain.exponentialRampToValueAtTime(i === 0 ? 0.075 : 0.035, now + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.45);
+          osc.connect(gain);
+          gain.connect(sfxCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.48);
+        });
+      } else {
+        sfxBusyUntil = now + 0.37;
+        [329.63, 246.94].forEach((freq, i) => {
+          const t = now + i * 0.11;
+          const osc = sfxCtx.createOscillator();
+          const gain = sfxCtx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, t);
+          gain.gain.setValueAtTime(0.0008, t);
+          gain.gain.exponentialRampToValueAtTime(0.072, t + 0.012);
+          gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.34);
+          osc.connect(gain);
+          gain.connect(sfxCtx.destination);
+          osc.start(t);
+          osc.stop(t + 0.36);
+        });
+      }
       return;
     }
 
     if (ok) {
+      sfxBusyUntil = now + 0.21;
       const notes = [392.0, 587.33];
       notes.forEach((freq, i) => {
         const t = now + i * 0.075;
@@ -377,15 +399,16 @@ export function playFeedback(ok) {
         const gain = sfxCtx.createGain();
         osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.001, t);
-        gain.gain.exponentialRampToValueAtTime(0.11, t + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.19);
+        gain.gain.setValueAtTime(0.0008, t);
+        gain.gain.exponentialRampToValueAtTime(0.072, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.19);
         osc.connect(gain);
         gain.connect(sfxCtx.destination);
         osc.start(t);
         osc.stop(t + 0.2);
       });
     } else {
+      sfxBusyUntil = now + 0.17;
       const notes = [329.63, 246.94];
       notes.forEach((freq, i) => {
         const t = now + i * 0.07;
@@ -393,9 +416,9 @@ export function playFeedback(ok) {
         const gain = sfxCtx.createGain();
         osc.type = 'triangle';
         osc.frequency.setValueAtTime(freq, t);
-        gain.gain.setValueAtTime(0.001, t);
-        gain.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.15);
+        gain.gain.setValueAtTime(0.0008, t);
+        gain.gain.exponentialRampToValueAtTime(0.055, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.15);
         osc.connect(gain);
         gain.connect(sfxCtx.destination);
         osc.start(t);
