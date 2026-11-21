@@ -392,12 +392,12 @@ const taskButtons = plan.tasks.map((t, idx) => {
       <h1>听 HSK 3.0 (1–4) — аудирование</h1>
       <p>В офлайн-памяти: <b>${allWords.length}</b> слов нового HSK 3.0</p>
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px auto 6px;">
-        <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
-          <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
-          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? `HSK 2 (${p2}%)` : '🔒 HSK 2'}</option>
-          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? `HSK 3 (${p3}%)` : '🔒 HSK 3'}</option>
-          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? `HSK 4 (${p4}%)` : '🔒 HSK 4'}</option>
-        </select>
+     <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
+       <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
+       <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? `HSK 2 (${p2}%)` : 'HSK 2 🔒'}</option>
+       <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? `HSK 3 (${p3}%)` : 'HSK 3 🔒'}</option>
+       <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? `HSK 4 (${p4}%)` : 'HSK 4 🔒'}</option>
+     </select>
         <select id="lesSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">${lessonOptions}</select>
       </div>
       ${levelUpBanner}
