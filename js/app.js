@@ -948,49 +948,52 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
         .slice(0, 3);
       const options = Array.of(cur.ru, ...distractors).sort(() => Math.random() - 0.5);
 
-      let playCount = 0;
+          let curRate = Number(localStorage.getItem('hsk_play_rate') || '1');
 
-      app.innerHTML = `<div class="card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
-          <span style="color:var(--accent);font-weight:700;">🎯 Определение уровня</span>
-          <span style="color:var(--muted);">${idx + 1} / ${validQueue.length}</span>
-        </div>
-        <div class="card-audio" style="flex-direction:column;align-items:center;gap:8px;">
-          <button id="plPlay" class="big-play" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-          <span id="plSpeedHint" style="font-size:12px;color:var(--muted);">Обычная скорость (нажми для повтора медленнее)</span>
-        </div>
-        <p class="prompt">Выбери перевод услышанного слова</p>
-        <div id="plAnswers" class="answers" style="grid-template-columns:1fr;"></div>
-        <button id="plSkip" class="ghost" style="width:100%;margin-top:10px;font-size:15px;">🤷 Не знаю</button>
-      </div>`;
+        app.innerHTML = `<div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+            <span style="color:var(--accent);font-weight:800;font-size:15px;letter-spacing:0.5px;text-transform:uppercase;">ОПРЕДЕЛЕНИЕ УРОВНЯ</span>
+            <span style="color:var(--muted);font-size:13px;font-weight:600;">${idx + 1} / ${validQueue.length}</span>
+          </div>
+          <div class="card-audio" style="display:flex;justify-content:center;align-items:center;gap:18px;margin:6px 0 12px;">
+            <button id="plPlay" class="big-play" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <button data-rate="0.75" class="ghost" style="padding:5px 12px;font-size:12px;font-weight:700;min-width:64px;border-radius:10px;${curRate === 0.75 ? 'border-color:var(--jade);background:#EDF5F0;color:var(--jade);' : ''}">0.75×</button>
+              <button data-rate="1" class="ghost" style="padding:5px 12px;font-size:12px;font-weight:700;min-width:64px;border-radius:10px;${curRate === 1 ? 'border-color:var(--jade);background:#EDF5F0;color:var(--jade);' : ''}">1×</button>
+              <button data-rate="1.25" class="ghost" style="padding:5px 12px;font-size:12px;font-weight:700;min-width:64px;border-radius:10px;${curRate === 1.25 ? 'border-color:var(--jade);background:#EDF5F0;color:var(--jade);' : ''}">1.25×</button>
+            </div>
+          </div>
+          <p class="prompt">Выбери перевод услышанного слова</p>
+          <div id="plAnswers" class="answers" style="grid-template-columns:1fr 1fr;"></div>
+          <button id="plSkip" class="ghost" style="width:100%;margin-top:12px;font-size:15px;font-weight:600;background:#FBF4EA;border-color:#E5CFAF;color:#8A5A1E;">Не знаю</button>
+        </div>`;
 
-      const hintEl = app.querySelector('#plSpeedHint');
-      const playAlternating = () => {
-        const isSlow = playCount % 2 === 1;
-        const rate = isSlow ? 0.72 : 1.0;
-        if (playCount > 0) {
-          hintEl.textContent = isSlow
-            ? '🐢 Медленно (нажми для обычной скорости)'
-            : '🐇 Обычная скорость (нажми для медленного повтора)';
-        }
-        playCount += 1;
-        speak(cur.hanzi, { rate, instant: true });
-      };
+        const playWord = () => speak(cur.hanzi, { rate: curRate, instant: true });
+        app.querySelectorAll('[data-rate]').forEach(rb => {
+          rb.onclick = () => {
+            curRate = Number(rb.dataset.rate);
+            localStorage.setItem('hsk_play_rate', String(curRate));
+            app.querySelectorAll('[data-rate]').forEach(x => {
+              const active = Number(x.dataset.rate) === curRate;
+              x.style.borderColor = active ? 'var(--jade)' : '';
+              x.style.background = active ? '#EDF5F0' : '';
+              x.style.color = active ? 'var(--jade)' : '';
+            });
+            playWord();
+          };
+        });
 
-      app.querySelector('#plPlay').onclick = playAlternating;
-      playAlternating();
-
+        app.querySelector('#plPlay').onclick = playWord;
+        playWord();
       const ansBox = app.querySelector('#plAnswers');
       let locked = false;
-
       const showCorrect = () => {
         Array.from(ansBox.children).forEach(x => {
           if (x.textContent === cur.ru) x.classList.add('ok');
         });
       };
-
       options.forEach(opt => {
         const b = document.createElement('button');
         b.className = 'answer';
