@@ -1,8 +1,8 @@
 import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=54';
+import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=55';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=12';
-import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=8';
+import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=9';
 const VOCAB_KEY = 'hsk_vocab_v13';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
