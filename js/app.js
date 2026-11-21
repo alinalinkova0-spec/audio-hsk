@@ -253,11 +253,26 @@ function home() {
 const filtered = getFilteredWords();
   const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
   if (selectedLesson >= lessonCount) selectedLesson = 0;
+
+  const getLessonPct = idx => {
+    const slice = filtered.slice(idx * 50, (idx + 1) * 50);
+    if (!slice.length) return 0;
+    const known = slice.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
+    return Math.round((known / slice.length) * 100);
+  };
+  if (getLessonPct(selectedLesson) >= 85) {
+    const nextUnfinished = Array.from({ length: lessonCount }, (_, i) => i).find(i => getLessonPct(i) < 85);
+    if (nextUnfinished !== undefined && nextUnfinished !== selectedLesson) {
+      selectedLesson = nextUnfinished;
+      localStorage.setItem('hsk_les', String(selectedLesson));
+    }
+  }
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
     const from = idx * 50 + 1;
     const to = Math.min((idx + 1) * 50, filtered.length);
+    const pct = getLessonPct(idx);
     const sel = idx === selectedLesson ? 'selected' : '';
-    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
+    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to}) — ${pct}%</option>`;
   }).join('');
   const d = getDaily();
   const curMood = getTodayMood();
