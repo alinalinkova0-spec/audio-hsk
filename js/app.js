@@ -153,12 +153,12 @@ function home() {
   if (selectedLesson >= lessonCount) selectedLesson = 0;
 
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
-    const from = idx * 50 + 1;
-    const to = Math.min((idx + 1) * 50, filtered.length);
-
-    const sel = idx === selectedLesson ? 'selected' : '';
-    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
-  }).join('');
+  const tasks = Array.of(
+    { id: 'words', title: '1. Слова на слух', done: d.words || 0, goal: 12 },
+    { id: 'blitz', title: '2. Молния', done: d.blitz || 0, goal: 10 },
+    { id: 'phrases', title: '3. Фразы', done: d.phrases || 0, goal: 4 },
+    { id: 'stories', title: '4. Диалоги и тексты', done: d.stories || 0, goal: 2 }
+  );
 
   const d = getDaily();
   const tasks = [
@@ -247,25 +247,27 @@ function startMode(mode) {
       word: item.word,
       meta: { tier: item.tier, label: `${idx + 1}/${ramp.length}` }
     }));
-} else if (mode === 'blitz') {
-  const filtered = getFilteredWords();
-  if (selectedLesson * 50 >= filtered.length) selectedLesson = 0;
-  const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
-  const ruOnly = slice.filter(w => /[а-яё]/i.test(w.ru) && !w.ru.includes('MYMEMORY'));
-  const pool = ruOnly.length >= 4 ? ruOnly : slice;
-  const queue = [...pool].sort(() => Math.random() - 0.5).slice(0, 15);
+  } else if (mode === 'blitz') {
+    const filtered = getFilteredWords();
+    if (selectedLesson * 50 >= filtered.length) selectedLesson = 0;
+    const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
+    const ruOnly = slice.filter(w => /[а-яё]/i.test(w.ru) && !w.ru.includes('MYMEMORY'));
+    const pool = ruOnly.length >= 4 ? ruOnly : slice;
+    const queue = Array.from(pool).sort(() => Math.random() - 0.5).slice(0, 10);
     steps = queue.map((w, idx) => ({
       type: 'blitz',
       word: w,
       meta: { label: `${idx + 1}/${queue.length}` }
     }));
+  } else if (mode === 'stories') {
+    steps = Array.of({ type: 'story' }, { type: 'story' });
   } else {
-    
     const due = dueItems(srs, sentences.map(s => s.id));
-    const ids = (due.length ? due : sentences.map(s => s.id)).slice(0, 5);
+    const ids = (due.length ? due : sentences.map(s => s.id)).slice(0, 4);
     const queue = ids.map(id => sentences.find(s => s.id === id)).filter(Boolean);
     steps = queue.map(s => ({ type: 'phrase', sentence: s }));
   }
+
   let i = 0;
   let goalShown = false;
 
@@ -275,7 +277,7 @@ function startMode(mode) {
         <img src="./goose_plan_done.gif" alt="План на сегодня выполнен" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
       </div>
       <h1 style="margin-top:12px;color:var(--jade);font-size:24px;">План на сегодня выполнен!!! 🎉</h1>
-      <p style="color:var(--muted);margin-top:6px;">Все 3 задания на сегодня закрыты!</p>
+      <p style="color:var(--muted);margin-top:6px;">Все 4 задания на сегодня закрыты!</p>
       <div class="row" style="justify-content:center;gap:12px;margin-top:18px;">
         <a href="#/" class="cta">На главную</a>
       </div>
@@ -289,11 +291,11 @@ function startMode(mode) {
     }
 
     const dNow = getDaily();
-    const allThreeDone = dNow.words >= 15 && dNow.blitz >= 15 && dNow.phrases >= 5;
+    const allFourDone = dNow.words >= 12 && dNow.blitz >= 10 && dNow.phrases >= 4 && dNow.stories >= 2;
 
-    if (mode === 'words' && i > 0 && dNow.words >= 15 && !goalShown) {
+    if (mode === 'words' && i > 0 && dNow.words >= 12 && !goalShown) {
       goalShown = true;
-      if (allThreeDone) {
+      if (allFourDone) {
         showAllPlanDone();
         return;
       }
@@ -332,7 +334,7 @@ function startMode(mode) {
         return;
       }
 
-      if (allThreeDone) {
+      if (allFourDone) {
         showAllPlanDone();
         return;
       }
@@ -350,6 +352,7 @@ function startMode(mode) {
     const st = steps[i++];
     if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
     else if (st.type === 'blitz') renderBlitzCard(app, st.word, srs, next, st.meta);
+    else if (st.type === 'story') renderStoryCard(app, stories, { p1: getLevelProgress(1), p2: getLevelProgress(2), p3: getLevelProgress(3) }, srs, next);
     else renderPhraseChoice(app, st.sentence, sentences, srs, next);
   }
   next();
