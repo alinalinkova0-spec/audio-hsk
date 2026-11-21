@@ -18,8 +18,9 @@ body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
-  background-image: radial-gradient(#DCE2DA 0.85px, transparent 0.85px);
-  background-size: 20px 20px;
+  background-image: radial-gradient(circle at 12px 12px, #DCE2DA 0.85px, transparent 0.85px);
+  background-size: 24px 24px;
+  line-height: 24px;
   color: var(--fg);
   letter-spacing: normal;
   -webkit-font-smoothing: antialiased;
@@ -29,7 +30,8 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 14px 20px;
+ height: 48px;
+padding: 0 20px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
