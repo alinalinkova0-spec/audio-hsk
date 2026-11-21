@@ -394,8 +394,8 @@ const taskButtons = plan.tasks.map((t, idx) => {
     : '';
   app.innerHTML = `
     <section class="hero">
-      <h1>听 HSK 3.0 (1–4) — аудирование</h1>
-      <p>В офлайн-памяти: <b>${allWords.length}</b> слов нового HSK 3.0</p>
+      <h1>HSK 3.0 听力训练</h1>
+      <p style="color:var(--muted);opacity:0.85;font-size:14px;">${knowsAll(['听力', '训练']) ? '' : '<span style="color:var(--jade);font-weight:500;">Tīnglì xùnliàn</span> · '}Тренировка аудирования</p>
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
