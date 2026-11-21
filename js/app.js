@@ -1,7 +1,7 @@
-import { words as defaultWords, sentences } from './data.js';
+import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard } from './screens/card.js?v=48';
-import { renderPhraseChoice } from './screens/segment.js?v=9';
+import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=10';
 
 const VOCAB_KEY = 'hsk_vocab_v13';
 
@@ -21,9 +21,15 @@ function getTodayKey() {
 
 function getDaily() {
   try {
-    return JSON.parse(localStorage.getItem(getTodayKey())) || { words: 0, blitz: 0, phrases: 0 };
+    const raw = JSON.parse(localStorage.getItem(getTodayKey())) || {};
+    return {
+      words: raw.words || 0,
+      blitz: raw.blitz || 0,
+      phrases: raw.phrases || 0,
+      stories: raw.stories || 0
+    };
   } catch {
-    return { words: 0, blitz: 0, phrases: 0 };
+    return { words: 0, blitz: 0, phrases: 0, stories: 0 };
   }
 }
 
@@ -56,6 +62,7 @@ function router() {
   else if (h === 'words') startMode('words');
   else if (h === 'blitz') startMode('blitz');
   else if (h === 'phrases') startMode('phrases');
+  else if (h === 'stories') startMode('stories');
   else if (h === 'stats') stats();
   else home();
 }
