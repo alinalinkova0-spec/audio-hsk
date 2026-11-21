@@ -15,7 +15,11 @@ if (!localStorage.getItem('hsk_start_date')) {
   localStorage.setItem('hsk_start_date', new Date().toISOString());
 }
 function getTodayKey() {
-  return 'hsk_daily_' + new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `hsk_daily_${y}-${m}-${day}`;
 }
 function getDaily() {
   try {
@@ -36,7 +40,11 @@ function addDaily(mode, count) {
   localStorage.setItem(getTodayKey(), JSON.stringify(d));
 }
 function getTodayMoodKey() {
-  return 'hsk_mood_' + new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `hsk_mood_${y}-${m}-${day}`;
 }
 
 function getTodayMood() {
@@ -1434,7 +1442,14 @@ function settings() {
   };
 }
 
+let lastKnownDay = getTodayMoodKey();
 setInterval(() => {
+  const curDay = getTodayMoodKey();
+  if (curDay !== lastKnownDay) {
+    lastKnownDay = curDay;
+    const h = location.hash.replace(/^#\/?/, '');
+    if (!h) home();
+  }
   if (localStorage.getItem('hsk_rem_on') !== '1') return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   const target = localStorage.getItem('hsk_rem_time') || '19:00';
@@ -1446,7 +1461,7 @@ setInterval(() => {
     const doneAll = d.words >= 12 && d.blitz >= 10 && d.phrases >= 4 && d.stories >= 2;
     localStorage.setItem(todaySentKey, '1');
     if (!doneAll) {
-      new Notification('听 HSK 1–4 🦆', {
+new Notification('HSK 3.0 听力训练 🦆', {
         body: 'Пора размять слух! План на сегодня ещё ждёт тебя.',
         icon: './goose.jpg'
       });
