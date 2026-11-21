@@ -741,12 +741,12 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
 }
 
  async function startPlacementTest() {
-   app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
-    <div style="width:185px;height:195px;margin:0 auto 10px;overflow:hidden;position:relative;">
-      <img src="./goose_test.jpg" alt="Подготовка теста" style="width:170%;max-width:none;height:auto;margin-left:-44%;margin-top:-18%;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
-    </div>
+  app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:28px 16px;">
     <h2 style="margin:0 0 6px;">Подготовка теста...</h2>
-    <p id="plLoad" style="color:var(--muted);margin:0;">Выбираем 24 слова...</p>
+    <p id="plLoad" style="color:var(--muted);margin:0 0 12px;min-height:20px;"></p>
+    <div style="width:240px;height:245px;margin:0 auto;overflow:hidden;position:relative;">
+      <img src="./goose_test.jpg" alt="Подготовка теста" style="width:185%;max-width:none;height:auto;margin-left:-56%;margin-top:-20%;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+    </div>
   </section>`;
 
   try {
