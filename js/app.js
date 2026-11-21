@@ -306,12 +306,15 @@ const filtered = getFilteredWords();
     }).join('');
 
     app.innerHTML = `
-      <section class="hero" style="max-width:420px;margin:0 auto;padding:28px 16px;">
+      <section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px 12px;">
         <h2 style="margin:0 0 14px;font-size:22px;text-align:center;"> Какой ты сегодня?</h2>
         <div class="box" style="margin:0;padding:12px;">
           <div style="display:flex;flex-direction:column;gap:9px;">
             ${moodButtonsHtml}
           </div>
+        </div>
+        <div style="width:100%;max-width:250px;margin:14px auto 0;text-align:center;">
+          <img src="./goose_mood.jpg" alt="Задумчивый гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
         </div>
       </section>`;
 
