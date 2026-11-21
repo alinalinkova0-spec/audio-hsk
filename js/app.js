@@ -975,6 +975,7 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       <p style="color:var(--accent);">${e.message}</p>
       <a href="#/" class="cta">Назад</a></section>`;
   }
+   }
 async function startLevelUpTest() {
   const curLvl = Number(selectedLevel) || 1;
   const targetLvl = Math.min(4, curLvl + 1);
