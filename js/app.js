@@ -206,9 +206,9 @@ function home() {
         </div>
         <p id="welcomeLoadStatus" style="font-size:13px;color:var(--accent);font-weight:600;margin:0;"></p>
         <div style="margin:12px 0 8px;font-size:13px;color:var(--muted);text-align:center;line-height:1.5;">
-          <div style="margin-bottom:4px;">💡 <b>Этот сайт можно добавить<br>на главный экран телефона<br>для быстрого доступа:</b></div>
-          <div><b>На iPhone:</b> нажми «Поделиться» внизу экрана → выбери «На экран Домой»</div>
-          <div><b>На Android:</b> нажми «⋮» в правом верхнем углу → выбери «Добавить на гл. экран»</div>
+          <div style="margin-bottom:3px;">💡 <b>Этот сайт можно добавить<br>на главный экран телефона для быстрого доступа:</b></div>
+          <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
+          <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
         </div>
         <div style="width:100%;max-width:270px;margin:10px auto 0;text-align:center;">
           <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
