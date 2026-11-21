@@ -188,13 +188,16 @@ function home() {
   const userStartLvl = Number(localStorage.getItem('hsk_start_lvl') || 0);
   if (allWords.length <= 25 || !userStartLvl) {
     app.innerHTML = `
-      <section class="hero" style="max-width:420px;margin:0 auto;padding:12px 16px 8px;">
+      <section class="hero" style="max-width:420px;margin:0 auto;padding:8px 16px 10px;">
+        <div style="width:100%;max-width:210px;margin:0 auto 2px;text-align:center;">
+          <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+        </div>
         <h1 style="margin:0 0 4px;font-size:24px;">Привет! 👋</h1>
         <p style="font-size:15px;line-height:1.35;color:var(--fg);margin:0;">
           Это тренажёр аудирования<br>
           по новому <b>HSK 3.0 (1–4 уровни)</b>
         </p>
-        <div class="box" style="text-align:left;margin:10px 0 6px;padding:10px;">
+        <div class="box" style="text-align:left;margin:10px 0 4px;padding:10px;">
           <div style="font-weight:700;font-size:14px;margin-bottom:8px;text-align:center;">Выбери свой текущий уровень:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
             <button class="ans" data-pick-lvl="1" style="padding:11px 8px;font-size:16px;font-weight:700;text-align:center;">🌱 HSK 1</button>
@@ -202,19 +205,14 @@ function home() {
             <button class="ans" data-pick-lvl="3" style="padding:11px 8px;font-size:16px;font-weight:700;text-align:center;">🌳 HSK 3</button>
             <button class="ans" data-pick-lvl="4" style="padding:11px 8px;font-size:16px;font-weight:700;text-align:center;">🐉 HSK 4</button>
           </div>
-          <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:8px;padding:12px;font-size:15px;"> Я не знаю (пройти тест)</button>
+          <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:8px;padding:12px;font-size:15px;">🎯 Я не знаю (пройти тест)</button>
         </div>
         <p id="welcomeLoadStatus" style="font-size:13px;color:var(--accent);font-weight:600;margin:2px 0;min-height:18px;"></p>
-        <div style="width:100%;max-width:160px;margin:0 auto;text-align:center;">
-          <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+        <div style="margin-top:4px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
+          <div>💡 <b>Добавить на экран «Домой»:</b></div>
+          <div>iPhone: «Поделиться» → «На экран Домой»</div>
+          <div>Android: «⋮» → «Добавить на гл. экран»</div>
         </div>
-        <details style="margin-top:4px;font-size:12px;color:var(--muted);text-align:left;">
-          <summary style="cursor:pointer;text-align:center;list-style:none;">💡 Как добавить сайт на экран «Домой»</summary>
-          <div style="padding:6px 10px;background:#F7F2E7;border-radius:10px;margin-top:4px;line-height:1.45;">
-            • <b>iPhone:</b> «Поделиться» → <b>«На экран Домой»</b><br>
-            • <b>Android:</b> «⋮» → <b>«Добавить на гл. экран»</b>
-          </div>
-        </details>
       </section>`;
     app.querySelectorAll('[data-pick-lvl]').forEach(btn => {
       btn.onclick = async () => {
