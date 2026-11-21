@@ -87,3 +87,35 @@ export function speak(text, { rate = 1, instant = false } = {}) {
     speakTTS(clean, rate);
   }
 }
+
+export function speakDialog(lines, { rate = 1 } = {}) {
+  if (!('speechSynthesis' in window)) return;
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio = null;
+  }
+  speechSynthesis.cancel();
+  if (!zhVoices.length) loadVoices();
+
+  const items = Array.isArray(lines) ? lines : [{ speaker: 'A', text: String(lines || '') }];
+  let idx = 0;
+
+  function playNext() {
+    if (idx >= items.length) return;
+    const item = items[idx++];
+    const u = new SpeechSynthesisUtterance(item.text);
+    u.lang = 'zh-CN';
+    if (zhVoices.length) {
+      const vIdx = item.speaker === 'B' ? 1 % zhVoices.length : 0;
+      u.voice = zhVoices[vIdx];
+      if (zhVoices[vIdx].lang) u.lang = zhVoices[vIdx].lang;
+    }
+    u.pitch = item.speaker === 'B' ? 1.15 : 0.88;
+    u.rate = Math.min(2.0, +(rate * 1.15).toFixed(2));
+    u.onend = () => {
+      if (idx < items.length) setTimeout(playNext, 350);
+    };
+    speechSynthesis.speak(u);
+  }
+  playNext();
+}
