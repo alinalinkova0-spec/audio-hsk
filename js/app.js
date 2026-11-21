@@ -500,6 +500,8 @@ function startMode(mode) {
     }
     const st = steps[i++];
     if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
+    else if (st.type === 'read') renderReadCard(app, st.word, srs, next, st.meta);
+    else if (st.type === 'tone') renderToneCard(app, st.word, srs, next, st.meta);
     else if (st.type === 'blitz') renderBlitzCard(app, st.word, srs, next, st.meta);
     else if (st.type === 'story') renderStoryCard(app, stories, { p1: getLevelProgress(1), p2: getLevelProgress(2), p3: getLevelProgress(3) }, srs, next);
     else renderPhraseChoice(app, st.sentence, sentences, srs, next);
