@@ -387,11 +387,11 @@ const filtered = getFilteredWords();
       <h1>听 HSK 3.0 (1–4) — аудирование</h1>
       <p>В офлайн-памяти: <b>${allWords.length}</b> слов нового HSK 3.0</p>
       <div class="controls">
-        <select id="lvlSel">
+           <select id="lvlSel">
           <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
-          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? '' : '🔒 '}HSK 2 (${p2}% / нужно 95% в HSK 1)</option>
-          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? '' : '🔒 '}HSK 3 (${p3}% / нужно 95% в HSK 2)</option>
-          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? '' : '🔒 '}HSK 4 (${p4}% / нужно 95% в HSK 3)</option>
+          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? `HSK 2 (${p2}%)` : '🔒 HSK 2 (с 95% HSK 1)'}</option>
+          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? `HSK 3 (${p3}%)` : '🔒 HSK 3 (с 95% HSK 2)'}</option>
+          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? `HSK 4 (${p4}%)` : '🔒 HSK 4 (с 95% HSK 3)'}</option>
         </select>
         <select id="lesSel">${lessonOptions}</select>
       </div>
@@ -591,7 +591,7 @@ function startMode(mode) {
             </div>
             <h1 style="margin-top:14px;color:var(--jade);font-size:23px;">Поздравляю! 🎉</h1>
             <p style="font-size:15px;line-height:1.5;color:var(--fg);margin-top:8px;">
-              Этот сайт больше ничему не сможет тебя научить! Желаю удачи в изучении китайского языка! Я тобой горжусь! 🦆❤️
+              Этот сайт больше ничему не сможет тебя научить! Желаю удачи в изучении китайского языка! Я тобой горжусь! ❤️
             </p>
             <div class="box" style="text-align:left;margin:16px 0;font-size:14px;line-height:1.7;">
               <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">🏆 Твои итоги пути:</h3>
@@ -626,18 +626,41 @@ function startMode(mode) {
           };
           return;
         }
-        app.innerHTML = `<section class="hero" style="padding:36px 0;">
-          <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
+        const curPct = getLevelProgress(curLvl);
+        const nextLvlNum = Math.min(4, curLvl + 1);
+        app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
+          <div style="position:relative;width:100%;max-width:310px;margin:0 auto;">
             <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
             <div style="position:absolute;left:46%;right:0;top:28%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;line-height:1.3;color:var(--jade);letter-spacing:0.2px;pointer-events:none;">
               <div>УСПЕШНО ПРОЙДЕН</div>
               <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK ${curLvl} 🎉</div>
             </div>
           </div>
-          <div class="row" style="justify-content:center;gap:12px;margin-top:24px;">
-            <a href="#/" class="cta">Перейти к следующему уровню</a>
+          <p style="font-size:15px;line-height:1.45;color:var(--fg);margin:14px 0 4px;font-weight:600;">
+            Ты освоила ${curPct}% уровня! Хочешь добить до 100% или перейти на HSK ${nextLvlNum}?
+          </p>
+          <p style="font-size:12px;line-height:1.4;color:var(--muted);opacity:0.75;margin:0 0 16px;">
+            (не переживай, эти оставшиеся ${100 - curPct}% всё равно будут появляться на следующем уровне)
+          </p>
+          <div style="display:flex;flex-direction:column;gap:10px;">
+            <button id="goNextLvlBtn" class="cta" style="width:100%;border:none;cursor:pointer;margin:0;padding:13px;font-size:15px;">🚀 Перейти на HSK ${nextLvlNum}</button>
+            <button id="stayFinishBtn" class="ghost" style="width:100%;padding:12px;font-size:14px;">🎯 Добить текущий уровень до 100%</button>
           </div>
         </section>`;
+        app.querySelector('#goNextLvlBtn').onclick = async () => {
+          const btn = app.querySelector('#goNextLvlBtn');
+          btn.disabled = true;
+          btn.textContent = `Загружаем HSK ${nextLvlNum}...`;
+          await downloadLevelsUpTo(nextLvlNum);
+          selectedLevel = String(nextLvlNum);
+          selectedLesson = 0;
+          localStorage.setItem('hsk_lvl', selectedLevel);
+          localStorage.setItem('hsk_les', '0');
+          location.hash = '#/';
+        };
+        app.querySelector('#stayFinishBtn').onclick = () => {
+          location.hash = '#/';
+        };
         return;
       }
       if (allFourDone) {
