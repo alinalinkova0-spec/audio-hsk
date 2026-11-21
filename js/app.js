@@ -327,6 +327,72 @@ function startMode(mode) {
       const lvlDone = getLevelProgress(curLvl) >= 95;
 
       if (lvlDone) {
+        const allLevelsDone =
+          getLevelProgress(1) >= 95 &&
+          getLevelProgress(2) >= 95 &&
+          getLevelProgress(3) >= 95 &&
+          getLevelProgress(4) >= 95;
+
+        if (allLevelsDone) {
+          const startIso = localStorage.getItem('hsk_start_date') || new Date().toISOString();
+          const daysSpent = Math.max(1, Math.ceil((Date.now() - new Date(startIso).getTime()) / 86400000));
+          const learnedTotal = Object.values(srs).filter(s => s.reps >= 1).length;
+          const confidentTotal = Object.values(srs).filter(s => s.reps >= 3).length;
+
+          app.innerHTML = `<section class="hero" style="max-width:440px;margin:0 auto;padding:24px 16px;">
+            <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
+              <img src="./goose_all_done.jpg" alt="Все уровни пройдены" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
+              <div style="position:absolute;left:32%;top:6%;width:38%;height:19%;background:#FBF7EF;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 8px;font-family:'Inter',sans-serif;font-weight:800;font-size:13px;line-height:1.25;color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid #F4C430;">
+                Молодец!<br>Всё пройдено! 🎉
+              </div>
+              <svg viewBox="0 0 100 100" style="position:absolute;right:0;bottom:23%;width:14%;height:14%;pointer-events:none;">
+                <path d="M 0 38 Q 22 48 34 66" fill="none" stroke="#181818" stroke-width="6" stroke-linecap="round"/>
+                <path d="M 32 62 C 44 64 52 74 46 84 C 38 88 28 80 30 68 Z" fill="#181818"/>
+              </svg>
+            </div>
+
+            <h1 style="margin-top:14px;color:var(--jade);font-size:23px;">Поздравляю! 🎉</h1>
+            <p style="font-size:15px;line-height:1.5;color:var(--fg);margin-top:8px;">
+              Этот сайт больше ничему не сможет тебя научить! Желаю удачи в изучении китайского языка! Я тобой горжусь! 🦆❤️
+            </p>
+
+            <div class="box" style="text-align:left;margin:16px 0;font-size:14px;line-height:1.7;">
+              <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">🏆 Твои итоги пути:</h3>
+              <div>⏱ Времени в обучении: <b>${daysSpent} дн.</b></div>
+              <div>🎧 Освоено слов HSK 1–4 на слух: <b>${learnedTotal}</b> из ${allWords.length}</div>
+              <div>⭐ Узнаёшь мгновенно без подсказок: <b>${confidentTotal} слов</b></div>
+              <div>🎓 Уровень восприятия на слух: <b>Уверенный HSK 4</b></div>
+            </div>
+
+            <div class="box" style="text-align:left;margin:16px 0;">
+              <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">💌 Обратная связь автору</h3>
+              <p style="color:var(--muted);font-size:13px;margin-top:0;">Напиши, что понравилось или чего не хватило — это поможет сделать тренажёр ещё лучше:</p>
+              <textarea id="fbText" rows="3" placeholder="Твои впечатления, идеи или пожелания..." style="width:100%;box-sizing:border-box;padding:10px;border-radius:12px;border:1.5px solid var(--border);font-family:inherit;font-size:14px;resize:vertical;"></textarea>
+              <button id="sendFb" class="cta" style="width:100%;border:none;cursor:pointer;margin-top:10px;">Отправить отзыв</button>
+              <p id="fbStatus" style="margin-top:8px;font-size:13px;color:var(--jade);font-weight:600;"></p>
+            </div>
+
+            <div class="row" style="justify-content:center;gap:12px;margin-top:14px;">
+              <a href="#/" class="ghost">На главную</a>
+            </div>
+          </section>`;
+
+          app.querySelector('#sendFb').onclick = () => {
+            const text = app.querySelector('#fbText').value.trim();
+            const fbStatus = app.querySelector('#fbStatus');
+            if (!text) {
+              fbStatus.textContent = 'Напиши пару слов перед отправкой 😊';
+              return;
+            }
+            const savedFb = JSON.parse(localStorage.getItem('hsk_feedbacks') || '[]');
+            savedFb.push({ date: new Date().toISOString(), text, daysSpent, learnedTotal });
+            localStorage.setItem('hsk_feedbacks', JSON.stringify(savedFb));
+            app.querySelector('#fbText').value = '';
+            fbStatus.textContent = 'Спасибо за тёплые слова! Отзыв сохранён ❤️';
+          };
+          return;
+        }
+
         app.innerHTML = `<section class="hero" style="padding:36px 0;">
           <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
             <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
@@ -341,6 +407,7 @@ function startMode(mode) {
         </section>`;
         return;
       }
+
 
       if (allFourDone) {
         showAllPlanDone();
