@@ -394,10 +394,10 @@ const taskButtons = plan.tasks.map((t, idx) => {
     : '';
   app.innerHTML = `
     <section class="hero">
-      <h1>HSK 3.0 听力训练</h1>
-      ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin-top:2px;">(Tīnglì xùnliàn)</div>'}
-      <p style="color:var(--muted);opacity:0.85;font-size:13px;margin-top:2px;">Тренировка аудирования</p>
-      <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px auto 6px;">
+    <h1 style="margin-bottom:4px;">HSK 3.0 听力训练</h1>
+      ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin:0;">(Tīnglì xùnliàn)</div>'}
+      <p style="color:var(--muted);opacity:0.9;font-size:15px;font-weight:500;margin:6px 0;">Тренировка аудирования</p>
+      <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
        <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? `HSK 2 (${p2}%)` : 'HSK 2 🔒'}</option>
