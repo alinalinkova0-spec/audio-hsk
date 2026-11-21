@@ -378,17 +378,25 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     r => speak(word.hanzi, { rate: r }),
     { autoPlay: true }
   );
-
-  requestAnimationFrame(() => { bar.style.width = '0%'; });
-  const timer = setTimeout(() => {
-    if (!document.body.contains(answerEl)) return;
-    finish(false, null, true);
-  }, LIMIT_MS);
+   const startTime = Date.now();
+  const tick = setInterval(() => {
+    if (done || !document.body.contains(answerEl)) {
+      clearInterval(tick);
+      return;
+    }
+    const left = Math.max(0, 1 - (Date.now() - startTime) / LIMIT_MS);
+    bar.style.transition = 'none';
+    bar.style.width = (left * 100) + '%';
+    if (left <= 0) {
+      clearInterval(tick);
+      finish(false, null, true);
+    }
+  }, 40);
 
   function finish(ok, btn, timeout) {
     if (done || !document.body.contains(answerEl)) return;
     done = true;
-    clearTimeout(timer);
+    clearInterval(tick);
     if (btn) btn.classList.add(ok ? 'ok' : 'bad');
     if (!ok) {
       Array.from(answerEl.children).forEach(b => {
