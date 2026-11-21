@@ -1,7 +1,9 @@
 let zhVoices = [];
+let femaleVoice = null;
+let maleVoice = null;
 let voiceIdx = 0;
-let playCount = 0;
 let currentAudio = null;
+const missingNativeCache = new Set();
 
 function loadVoices() {
   if (!('speechSynthesis' in window)) return [];
@@ -13,16 +15,29 @@ function loadVoices() {
       lang.includes('hk') ||
       lang.includes('tw') ||
       lang.includes('mo') ||
-      name.includes('cantonese') ||
-      name.includes('yue') ||
-      name.includes('hong kong') ||
-      name.includes('taiwan')
+      /cantonese|yue|hong kong|taiwan|hokkien|minnan|wuu|hakka/.test(name)
     ) {
       return false;
     }
     return lang === 'zh-cn' || lang === 'cmn-hans-cn' || lang === 'zh';
   });
-  if (cn.length) zhVoices = cn;
+
+  if (cn.length) {
+    cn.sort((a, b) => {
+      const score = v => {
+        const n = String(v.name || '').toLowerCase();
+        let s = 0;
+        if (n.includes('natural') || n.includes('neural') || n.includes('online')) s += 10;
+        if (n.includes('xiaoxiao') || n.includes('yunxi') || n.includes('google') || n.includes('ting-ting')) s += 5;
+        return s;
+      };
+      return score(b) - score(a);
+    });
+    zhVoices = cn;
+
+    femaleVoice = cn.find(v => /xiaoxiao|xiaoyi|yaoyao|huihui|ting-ting|female|woman/i.test(v.name)) || cn.at(0);
+    maleVoice = cn.find(v => /yunxi|yunyang|yunjian|kangkang|male|man/i.test(v.name)) || cn.at(1) || cn.at(0);
+  }
   return zhVoices;
 }
 
@@ -31,27 +46,30 @@ if ('speechSynthesis' in window) {
   loadVoices();
 }
 
-function speakTTS(text, rate = 1) {
+function speakTTS(text, rate = 1, speaker = null) {
   if (!('speechSynthesis' in window)) return;
-if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
-  speechSynthesis.cancel();
+  if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
+  if (!zhVoices.length) loadVoices();
 
   const u = new SpeechSynthesisUtterance(text);
   u.lang = 'zh-CN';
 
   if (zhVoices.length) {
-    const v = zhVoices[voiceIdx % zhVoices.length];
+    let v = zhVoices[voiceIdx % zhVoices.length];
+    if (speaker === 'A' && femaleVoice) v = femaleVoice;
+    else if (speaker === 'B' && maleVoice) v = maleVoice;
+    else voiceIdx++;
+
     u.voice = v;
-    if (v.lang) u.lang = v.lang;
-    voiceIdx++;
+    u.lang = 'zh-CN';
   }
 
-  u.pitch = 1.0;
-  u.rate = Math.min(2.0, +(rate * 1.3).toFixed(2));
-
+  u.pitch = speaker === 'B' ? 0.92 : 1.0;
+  u.rate = Math.min(1.8, Math.max(0.55, +(rate * 1.05).toFixed(2)));
   speechSynthesis.speak(u);
 }
-export function speak(text, { rate = 1, instant = false } = {}) {
+
+export function speak(text, { rate = 1 } = {}) {
   const clean = String(text || '').trim();
   if (!clean) return;
 
@@ -60,32 +78,37 @@ export function speak(text, { rate = 1, instant = false } = {}) {
     currentAudio = null;
   }
 
-  if (instant) {
-    speakTTS(clean, rate);
-    return;
-  }
-
   if ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
     speechSynthesis.cancel();
   }
 
-  playCount++;
+  const isShortWord = [...clean].length <= 4 && !/[，。！？、；：]/.test(clean);
 
-  const host = 'raw.' + 'githubusercontent.com';
-  const mp3Url = `https://${host}/hugolpz/audio-cmn/master/64k/cmn-${encodeURIComponent(clean)}.mp3`;
-
-  const useNativeSpeaker = (rate >= 0.9) && (playCount % 2 === 1) && [...clean].length <= 4;
-
-  if (useNativeSpeaker) {
+  if (isShortWord && !missingNativeCache.has(clean)) {
+    const host = 'raw.' + 'githubusercontent.com';
+    const mp3Url = `https://${host}/hugolpz/audio-cmn/master/64k/cmn-${encodeURIComponent(clean)}.mp3`;
     const audio = new Audio(mp3Url);
-    audio.playbackRate = Math.min(1.6, +(rate * 1.15).toFixed(2));
+    audio.playbackRate = Math.min(1.5, Math.max(0.65, +rate.toFixed(2)));
     currentAudio = audio;
+
+    audio.onerror = () => {
+      missingNativeCache.add(clean);
+      if (currentAudio === audio) {
+        currentAudio = null;
+        speakTTS(clean, rate);
+      }
+    };
+
     audio.play().catch(() => {
-      if (currentAudio === audio) speakTTS(clean, rate);
+      if (currentAudio === audio) {
+        currentAudio = null;
+        speakTTS(clean, rate);
+      }
     });
-  } else {
-    speakTTS(clean, rate);
+    return;
   }
+
+  speakTTS(clean, rate);
 }
 
 export function speakDialog(lines, { rate = 1 } = {}) {
@@ -105,15 +128,19 @@ export function speakDialog(lines, { rate = 1 } = {}) {
     const item = items[idx++];
     const u = new SpeechSynthesisUtterance(item.text);
     u.lang = 'zh-CN';
+
     if (zhVoices.length) {
-      const vIdx = item.speaker === 'B' ? 1 % zhVoices.length : 0;
-      u.voice = zhVoices[vIdx];
-      if (zhVoices[vIdx].lang) u.lang = zhVoices[vIdx].lang;
+      const v = item.speaker === 'B' ? (maleVoice || zhVoices.at(0)) : (femaleVoice || zhVoices.at(0));
+      u.voice = v;
+      u.lang = 'zh-CN';
     }
-    u.pitch = item.speaker === 'B' ? 1.15 : 0.88;
-    u.rate = Math.min(2.0, +(rate * 1.15).toFixed(2));
+
+    const sameVoice = femaleVoice && maleVoice && femaleVoice.name === maleVoice.name;
+    u.pitch = item.speaker === 'B' ? (sameVoice ? 0.82 : 0.95) : (sameVoice ? 1.12 : 1.02);
+    u.rate = Math.min(1.8, Math.max(0.55, +(rate * 1.02).toFixed(2)));
+
     u.onend = () => {
-      if (idx < items.length) setTimeout(playNext, 350);
+      if (idx < items.length) setTimeout(playNext, 380);
     };
     speechSynthesis.speak(u);
   }
