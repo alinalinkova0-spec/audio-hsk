@@ -209,6 +209,8 @@ speak(word.hanzi, { rate });
     done = true;
     const ok = o.id === word.id;
     btn.classList.add(ok ? 'ok' : 'bad');
+        const prevStreak = Number(localStorage.getItem('hsk_streak') || 0);
+    localStorage.setItem('hsk_streak', ok ? String(prevStreak + 1) : '0');
      if (!ok) {
       recordWeakness(word.id, 'audioErr');
       [...answerEl.children].forEach(b => {
