@@ -2,7 +2,7 @@ import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=54';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=12';
-import { speak, stopAudio, mountAudioControl } from './audio.js?v=5';
+import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=6';
 const VOCAB_KEY = 'hsk_vocab_v13';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
@@ -133,6 +133,26 @@ function saveVocab(list) {
   window.__ALL_WORDS = list;
   localStorage.setItem(VOCAB_KEY, JSON.stringify(list));
 }
+let lastSfxTime = 0;
+new MutationObserver(mutations => {
+  if (Date.now() - lastSfxTime < 150) return;
+  let hasBad = false;
+  let hasOk = false;
+  for (const m of mutations) {
+    const el = m.target;
+    if (el.classList && el.classList.contains('answer')) {
+      if (el.classList.contains('bad')) hasBad = true;
+      else if (el.classList.contains('ok')) hasOk = true;
+    }
+  }
+  if (hasBad) {
+    lastSfxTime = Date.now();
+    playFeedback(false);
+  } else if (hasOk) {
+    lastSfxTime = Date.now();
+    playFeedback(true);
+  }
+}).observe(app, { subtree: true, attributes: true, attributeFilter: ['class'] });
 window.addEventListener('hashchange', router);
 window.addEventListener('pagehide', stopAudio);
 document.addEventListener('visibilitychange', () => {
@@ -1263,10 +1283,24 @@ function stats() {
 function settings() {
   const remOn = localStorage.getItem('hsk_rem_on') === '1';
   const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
+  const sfxOn = localStorage.getItem('hsk_sfx_off') !== '1';
   app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
     <h2 style="margin-top:0;">Настройки</h2>
-
     <div class="box">
+      <h3 style="margin-top:0;font-size:16px;">🎵 Звук ответов</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;">
+          Нефритовый отклик
+        </label>
+        <div style="display:flex;gap:6px;">
+          <button id="testSfxOk" class="ghost" style="font-size:13px;padding:6px 10px;">✓ Верно</button>
+          <button id="testSfxBad" class="ghost" style="font-size:13px;padding:6px 10px;">✕ Ошибка</button>
+        </div>
+      </div>
+    </div>
+
+<div class="box" style="margin-top:14px;">
       <h3 style="margin-top:0;font-size:16px;">🎯 Мой уровень HSK</h3>
       <p style="color:var(--muted);font-size:13px;">Переключись на другой уровень или пройди входной тест заново:</p>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">
@@ -1350,6 +1384,12 @@ function settings() {
       remStatus.textContent = 'Время напоминания обновлено: ' + e.target.value;
     }
   };
+  app.querySelector('#sfxToggle').onchange = e => {
+    localStorage.setItem('hsk_sfx_off', e.target.checked ? '0' : '1');
+    if (e.target.checked) playFeedback(true);
+  };
+  app.querySelector('#testSfxOk').onclick = () => playFeedback(true);
+  app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
 
   app.querySelector('#testNotify').onclick = async () => {
     if (!('Notification' in window)) {
