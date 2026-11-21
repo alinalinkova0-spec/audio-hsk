@@ -1,4 +1,4 @@
-import { speak, speakDialog } from '../audio.js?v=3';)
+import { speak, speakDialog } from '../audio.js?v=3';
 import { review, saveSRS } from '../srs.js';
 
 export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
