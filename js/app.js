@@ -14,6 +14,9 @@ let lastMode = localStorage.getItem('hsk_mode') || 'words';
 
 const app = document.getElementById('app');
 const srs = loadSRS();
+if (!localStorage.getItem('hsk_start_date')) {
+  localStorage.setItem('hsk_start_date', new Date().toISOString());
+}
 
 function getTodayKey() {
   return 'hsk_daily_' + new Date().toISOString().slice(0, 10);
@@ -207,7 +210,7 @@ function home() {
         <select id="lesSel">${lessonOptions}</select>
       </div>
       <div style="width:100%;max-width:420px;margin:16px auto 0;display:flex;flex-direction:column;gap:10px;">
-        <div style="text-align:left;font-size:12px;color:var(--muted);padding:0 6px;line-height:1.35;">Для открытия следующего HSK нужно выучить 95% слов уровня выше.</div>
+     <div style="text-align:left;font-size:12px;color:var(--muted);padding:0 6px;line-height:1.35;">Для открытия следующего HSK нужно выучить 95% слов предыдущего уровня.</div>
         <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 6px;margin-top:2px;">
           <span style="font-size:14px;font-weight:600;color:var(--fg);">План на сегодня:</span>
           <span style="font-size:12px;color:var(--muted);">Сегодня / норма</span>
