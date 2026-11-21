@@ -1,14 +1,15 @@
 :root {
-  --bg: #F7F3EB;
-  --card: #FFFDF9;
-  --fg: #231F20;
-  --muted: #78716C;
-  --border: #E5DEC9;
-  --accent: #C83E37;
-  --accent-hover: #A8302A;
-  --jade: #1E7E5E;
-  --ok: #1E7E5E;
-  --bad: #C83E37;
+  --bg: #F5F4EC;
+  --card: #FFFFFF;
+  --fg: #1F2622;
+  --muted: #6E7671;
+  --border: #DCE2DA;
+  --accent: #2A6F4E;
+  --accent-hover: #20573D;
+  --beak: #E07A22;
+  --jade: #2A6F4E;
+  --ok: #2A6F4E;
+  --bad: #C84B31;
 }
 
 * { box-sizing: border-box; }
@@ -17,7 +18,7 @@ body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background: var(--bg);
-  background-image: radial-gradient(#E5DEC9 0.75px, transparent 0.75px);
+  background-image: radial-gradient(#DCE2DA 0.85px, transparent 0.85px);
   background-size: 20px 20px;
   color: var(--fg);
   letter-spacing: normal;
@@ -29,7 +30,7 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 14px 20px;
-  background: rgba(255, 253, 249, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -86,11 +87,11 @@ main {
   margin-top: 16px;
   padding: 12px 24px;
   background: var(--accent);
-  color: #FFFDF9;
-  border-radius: 12px;
+  color: #FFFFFF;
+  border-radius: 14px;
   text-decoration: none;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(200, 62, 55, 0.22);
+  box-shadow: 0 4px 14px rgba(42, 111, 78, 0.24);
   transition: background 0.15s, transform 0.1s;
 }
 
@@ -102,7 +103,7 @@ main {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 8px 24px rgba(35, 31, 32, 0.05);
+  box-shadow: 0 8px 24px rgba(31, 38, 34, 0.05);
 }
 
 .card-audio {
@@ -117,12 +118,12 @@ main {
   width: 84px;
   height: 84px;
   border-radius: 50%;
-  border: 3px solid #F3D5D3;
+  border: 3px solid #D3E6DC;
   background: var(--accent);
-  color: #FFFDF9;
+  color: #FFFFFF;
   font-size: 28px;
   cursor: pointer;
-  box-shadow: 0 6px 18px rgba(200, 62, 55, 0.28);
+  box-shadow: 0 6px 18px rgba(42, 111, 78, 0.26);
   transition: transform 0.12s, background 0.15s;
 }
 
@@ -130,10 +131,10 @@ main {
 .big-play:active { transform: scale(0.95); }
 
 .ghost {
-  background: #FBF8F1;
+  background: #F7F9F7;
   color: var(--fg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   padding: 9px 14px;
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -143,7 +144,7 @@ main {
 
 .ghost:hover {
   border-color: var(--accent);
-  background: #FFFDF9;
+  background: #FFFFFF;
 }
 
 .prompt {
@@ -161,7 +162,7 @@ main {
 
 .answer, .ans {
   padding: 14px 16px;
-  background: var(--card);
+  background: #FAFBF9;
   color: var(--fg);
   border: 1.5px solid var(--border);
   border-radius: 14px;
@@ -169,13 +170,13 @@ main {
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  box-shadow: 0 2px 6px rgba(35, 31, 32, 0.03);
+  box-shadow: 0 2px 6px rgba(31, 38, 34, 0.03);
   transition: border-color 0.15s, transform 0.1s, background 0.15s;
 }
 
 .answer:hover, .ans:hover {
   border-color: var(--accent);
-  background: #FBF8F1;
+  background: #EDF5F0;
 }
 
 .answer.ok {
