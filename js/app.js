@@ -210,7 +210,7 @@ function home() {
           <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
           <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
         </div>
-        <div style="width:100%;max-width:270px;margin:10px auto 0;text-align:center;">
+<div style="width:100%;max-width:270px;margin:-14px auto 0;text-align:center;">
           <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
         </div>
       </section>`;
