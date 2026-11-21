@@ -112,6 +112,7 @@ function getLevelProgress(lvl) {
   const known = lvlWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
   return Math.round((known / lvlWords.length) * 100);
 }
+function home() {
   if (allWords.length <= 25) {
     app.innerHTML = `
       <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
@@ -141,6 +142,10 @@ function getLevelProgress(lvl) {
     return;
   }
 
+  const p1 = getLevelProgress(1);
+  const p2 = getLevelProgress(2);
+  const p3 = getLevelProgress(3);
+  const p4 = getLevelProgress(4);
 
   const unlocked2 = p1 >= 95;
   const unlocked3 = unlocked2 && p2 >= 95;
