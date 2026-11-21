@@ -153,19 +153,19 @@ function home() {
   if (selectedLesson >= lessonCount) selectedLesson = 0;
 
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
+    const from = idx * 50 + 1;
+    const to = Math.min((idx + 1) * 50, filtered.length);
+    const sel = idx === selectedLesson ? 'selected' : '';
+    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
+  }).join('');
+
+  const d = getDaily();
   const tasks = Array.of(
     { id: 'words', title: '1. Слова на слух', done: d.words || 0, goal: 12 },
     { id: 'blitz', title: '2. Молния', done: d.blitz || 0, goal: 10 },
     { id: 'phrases', title: '3. Фразы', done: d.phrases || 0, goal: 4 },
     { id: 'stories', title: '4. Диалоги и тексты', done: d.stories || 0, goal: 2 }
   );
-
-  const d = getDaily();
-  const tasks = [
-    { id: 'words', title: '1. Слова на слух', done: d.words, goal: 15 },
-    { id: 'blitz', title: '2. Молния', done: d.blitz, goal: 15 },
-    { id: 'phrases', title: '3. Фразы', done: d.phrases, goal: 5 },
-  ];
 
   const taskButtons = tasks.map(t => {
     const isDone = t.done >= t.goal;
