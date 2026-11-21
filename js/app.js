@@ -112,19 +112,26 @@ function getLevelProgress(lvl) {
   const known = lvlWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
   return Math.round((known / lvlWords.length) * 100);
 }
-
-function home() {
   if (allWords.length <= 25) {
     app.innerHTML = `
       <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
         <h1>Привет! 👋</h1>
-        <p style="font-size:15px;line-height:1.5;color:var(--fg);margin-top:8px;">
-          Чтобы всё заработало и открывалось даже <b>офлайн без интернета</b>, сделай пару шагов:
+        <p style="font-size:15px;line-height:1.45;color:var(--fg);margin-top:8px;margin-bottom:4px;">
+          Чтобы всё заработало
         </p>
-        <div class="box" style="text-align:left;margin:14px 0;font-size:14px;line-height:1.6;">
-          <div>1. Нажми кнопку ниже (или открой вкладку <b>«Статистика»</b> вверху)</div>
-          <div>2. Нажми <b>«Скачать словарь»</b> — база HSK 1–4 сохранится в память</div>
-          <div>3. Для удобства и уведомлений добавь сайт на экран <b>«Домой»</b> (на iPhone: <b>«Поделиться» → «На экран Домой»</b>)</div>
+        <p style="font-size:15px;line-height:1.45;color:var(--fg);margin:0 0 4px;">
+          и открывалось <b>офлайн даже без интернета</b>,
+        </p>
+        <p style="font-size:15px;line-height:1.45;color:var(--fg);margin:0 0 12px;">
+          сделай 2 быстрых шага:
+        </p>
+        <div class="box" style="text-align:left;margin:12px 0;font-size:14px;line-height:1.6;">
+          <div><b>1. Скачай словарь:</b> открой <b>«Статистику»</b> (кнопка ниже) и нажми <b>«Скачать словарь»</b>.</div>
+          <div style="margin-top:8px;"><b>2. Добавь на экран «Домой»</b> — для быстрого входа и уведомлений:</div>
+          <ul style="margin:4px 0 0 18px;padding:0;line-height:1.55;">
+            <li><b>iPhone:</b> «Поделиться» → <b>«На экран Домой»</b></li>
+            <li><b>Android:</b> «⋮» (меню) → <b>«Добавить на гл. экран»</b></li>
+          </ul>
         </div>
         <a href="#/stats" class="cta" style="display:inline-block;width:100%;text-align:center;">Перейти в Статистику →</a>
         <div style="width:100%;max-width:210px;margin:14px auto 0;text-align:center;">
@@ -134,10 +141,6 @@ function home() {
     return;
   }
 
-  const p1 = getLevelProgress(1);
-  const p2 = getLevelProgress(2);
-  const p3 = getLevelProgress(3);
-  const p4 = getLevelProgress(4);
 
   const unlocked2 = p1 >= 95;
   const unlocked3 = unlocked2 && p2 >= 95;
