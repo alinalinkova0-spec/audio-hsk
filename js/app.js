@@ -115,6 +115,7 @@ function getLevelProgress(lvl) {
   const known = lvlWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
   return Math.round((known / lvlWords.length) * 100);
 }
+function home() {
   const userStartLvl = Number(localStorage.getItem('hsk_start_lvl') || 0);
   if (allWords.length <= 25 || !userStartLvl) {
     app.innerHTML = `
@@ -181,7 +182,7 @@ function getLevelProgress(lvl) {
     selectedLevel = String(userStartLvl || 1);
     localStorage.setItem('hsk_lvl', selectedLevel);
   }
-
+const filtered = getFilteredWords();
   const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
   if (selectedLesson >= lessonCount) selectedLesson = 0;
 
