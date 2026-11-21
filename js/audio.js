@@ -3,7 +3,65 @@ let femaleVoice = null;
 let maleVoice = null;
 let voiceIdx = 0;
 let currentAudio = null;
+let dialogTimer = null;
+let playSessionId = 0;
+let isPaused = false;
+let isPlaying = false;
+let activePlayBtn = null;
 const missingNativeCache = new Set();
+
+const PLAY_SVG = '<svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>';
+const PAUSE_SVG = '<svg width="34" height="34" viewBox="0 0 24 24" fill="#FFFDF9"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
+
+function syncPlayBtn() {
+  if (!activePlayBtn || !document.body.contains(activePlayBtn)) return;
+  activePlayBtn.innerHTML = (isPlaying && !isPaused) ? PAUSE_SVG : PLAY_SVG;
+}
+
+export function stopAudio() {
+  playSessionId += 1;
+  isPaused = false;
+  isPlaying = false;
+  if (dialogTimer) {
+    clearTimeout(dialogTimer);
+    dialogTimer = null;
+  }
+  if (currentAudio) {
+    try { currentAudio.pause(); } catch {}
+    currentAudio = null;
+  }
+  if ('speechSynthesis' in window) {
+    try { speechSynthesis.cancel(); } catch {}
+  }
+  syncPlayBtn();
+}
+
+export function togglePause() {
+  if (!isPlaying) return false;
+  if (currentAudio) {
+    if (isPaused) {
+      isPaused = false;
+      currentAudio.play().catch(() => {});
+    } else {
+      isPaused = true;
+      currentAudio.pause();
+    }
+    syncPlayBtn();
+    return true;
+  }
+  if ('speechSynthesis' in window) {
+    if (isPaused) {
+      isPaused = false;
+      speechSynthesis.resume();
+    } else {
+      isPaused = true;
+      speechSynthesis.pause();
+    }
+    syncPlayBtn();
+    return true;
+  }
+  return false;
+}
 
 function loadVoices() {
   if (!('speechSynthesis' in window)) return [];
@@ -46,9 +104,8 @@ if ('speechSynthesis' in window) {
   loadVoices();
 }
 
-function speakTTS(text, rate = 1, speaker = null) {
+function speakTTS(text, rate = 1, speaker = null, sid = playSessionId) {
   if (!('speechSynthesis' in window)) return;
-  if (speechSynthesis.speaking || speechSynthesis.pending) speechSynthesis.cancel();
   if (!zhVoices.length) loadVoices();
 
   const u = new SpeechSynthesisUtterance(text);
@@ -66,21 +123,30 @@ function speakTTS(text, rate = 1, speaker = null) {
 
   u.pitch = speaker === 'B' ? 0.92 : 1.0;
   u.rate = Math.min(1.8, Math.max(0.55, +(rate * 1.05).toFixed(2)));
+  isPlaying = true;
+  isPaused = false;
+  syncPlayBtn();
+
+  u.onend = () => {
+    if (sid !== playSessionId) return;
+    isPlaying = false;
+    isPaused = false;
+    syncPlayBtn();
+  };
+  u.onerror = () => {
+    if (sid !== playSessionId) return;
+    isPlaying = false;
+    isPaused = false;
+    syncPlayBtn();
+  };
   speechSynthesis.speak(u);
 }
-
 export function speak(text, { rate = 1 } = {}) {
   const clean = String(text || '').trim();
   if (!clean) return;
 
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
-
-  if ('speechSynthesis' in window && (speechSynthesis.speaking || speechSynthesis.pending)) {
-    speechSynthesis.cancel();
-  }
+  stopAudio();
+  const sid = playSessionId;
 
   const isShortWord = [...clean].length <= 4 && !/[，。！？、；：]/.test(clean);
 
@@ -90,41 +156,58 @@ export function speak(text, { rate = 1 } = {}) {
     const audio = new Audio(mp3Url);
     audio.playbackRate = Math.min(1.5, Math.max(0.65, +rate.toFixed(2)));
     currentAudio = audio;
+    isPlaying = true;
+    isPaused = false;
+    syncPlayBtn();
+
+    audio.onended = () => {
+      if (sid !== playSessionId) return;
+      currentAudio = null;
+      isPlaying = false;
+      isPaused = false;
+      syncPlayBtn();
+    };
 
     audio.onerror = () => {
       missingNativeCache.add(clean);
-      if (currentAudio === audio) {
+      if (sid === playSessionId && currentAudio === audio) {
         currentAudio = null;
-        speakTTS(clean, rate);
+        speakTTS(clean, rate, null, sid);
       }
     };
 
     audio.play().catch(() => {
-      if (currentAudio === audio) {
+      if (sid === playSessionId && currentAudio === audio) {
         currentAudio = null;
-        speakTTS(clean, rate);
+        speakTTS(clean, rate, null, sid);
       }
     });
     return;
   }
 
-  speakTTS(clean, rate);
+  speakTTS(clean, rate, null, sid);
 }
 
 export function speakDialog(lines, { rate = 1 } = {}) {
   if (!('speechSynthesis' in window)) return;
-  if (currentAudio) {
-    currentAudio.pause();
-    currentAudio = null;
-  }
-  speechSynthesis.cancel();
+  stopAudio();
+  const sid = playSessionId;
   if (!zhVoices.length) loadVoices();
 
   const items = Array.isArray(lines) ? lines : [{ speaker: 'A', text: String(lines || '') }];
   let idx = 0;
+  isPlaying = true;
+  isPaused = false;
+  syncPlayBtn();
 
   function playNext() {
-    if (idx >= items.length) return;
+    if (sid !== playSessionId) return;
+    if (idx >= items.length) {
+      isPlaying = false;
+      isPaused = false;
+      syncPlayBtn();
+      return;
+    }
     const item = items[idx++];
     const u = new SpeechSynthesisUtterance(item.text);
     u.lang = 'zh-CN';
@@ -140,9 +223,99 @@ export function speakDialog(lines, { rate = 1 } = {}) {
     u.rate = Math.min(1.8, Math.max(0.55, +(rate * 1.02).toFixed(2)));
 
     u.onend = () => {
-      if (idx < items.length) setTimeout(playNext, 380);
+      if (sid !== playSessionId) return;
+      if (idx < items.length) {
+        dialogTimer = setTimeout(playNext, 380);
+      } else {
+        isPlaying = false;
+        isPaused = false;
+        syncPlayBtn();
+      }
+    };
+    u.onerror = () => {
+      if (sid !== playSessionId) return;
+      isPlaying = false;
+      isPaused = false;
+      syncPlayBtn();
     };
     speechSynthesis.speak(u);
   }
   playNext();
+}
+
+export function mountAudioControl(container, onPlayFn, { autoPlay = true } = {}) {
+  const SPEEDS = [0.8, 1.0, 1.2];
+  let rate = Number(localStorage.getItem('hsk_speed'));
+  if (!SPEEDS.includes(rate)) rate = 1.0;
+
+  container.innerHTML = `
+    <div style="display:flex;flex-direction:row;align-items:center;justify-content:center;gap:20px;">
+      <button type="button" data-role="play" class="big-play" aria-label="Прослушать / Пауза" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;">
+        ${PLAY_SVG}
+      </button>
+      <div data-role="speedWrap" style="position:relative;display:inline-flex;flex-direction:column;align-items:center;background:#EDF5F0;border:1.5px solid var(--border);border-radius:20px;padding:4px;user-select:none;touch-action:none;cursor:pointer;">
+        <div data-role="speedThumb" style="position:absolute;left:4px;right:4px;top:4px;height:34px;background:var(--jade);border-radius:15px;transition:transform 0.2s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(30,126,94,0.28);"></div>
+        ${SPEEDS.map(s => `<button type="button" data-speed="${s}" style="position:relative;z-index:1;width:66px;height:34px;padding:0;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:15px;font-weight:700;cursor:pointer;transition:color 0.2s;color:${s === rate ? '#FFFDF9' : 'var(--fg)'};">${s.toFixed(1)}x</button>`).join('')}
+      </div>
+    </div>`;
+
+  const playBtn = container.querySelector('[data-role="play"]');
+  const speedWrap = container.querySelector('[data-role="speedWrap"]');
+  const speedThumb = container.querySelector('[data-role="speedThumb"]');
+  const speedBtns = Array.from(speedWrap.querySelectorAll('button[data-speed]'));
+  activePlayBtn = playBtn;
+
+  function setSpeed(newRate, shouldPlay = true) {
+    rate = newRate;
+    localStorage.setItem('hsk_speed', String(rate));
+    const idx = SPEEDS.indexOf(rate);
+    speedThumb.style.transform = `translateY(${idx * 34}px)`;
+    speedBtns.forEach(b => {
+      b.style.color = Number(b.dataset.speed) === rate ? '#FFFDF9' : 'var(--fg)';
+    });
+    if (shouldPlay) {
+      activePlayBtn = playBtn;
+      onPlayFn(rate);
+    }
+  }
+
+  setSpeed(rate, false);
+
+  speedBtns.forEach(b => {
+    b.onclick = () => setSpeed(Number(b.dataset.speed), true);
+  });
+
+  let touchStartY = 0;
+  speedWrap.addEventListener('touchstart', e => {
+    touchStartY = e.changedTouches[0].clientY;
+  }, { passive: true });
+  speedWrap.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dy) < 15) return;
+    const idx = SPEEDS.indexOf(rate);
+    const nextIdx = dy > 0 ? Math.min(SPEEDS.length - 1, idx + 1) : Math.max(0, idx - 1);
+    if (nextIdx !== idx) setSpeed(SPEEDS[nextIdx], true);
+  }, { passive: true });
+
+  playBtn.onclick = () => {
+    if (activePlayBtn === playBtn && isPlaying) {
+      togglePause();
+      return;
+    }
+    activePlayBtn = playBtn;
+    onPlayFn(rate);
+  };
+
+  if (autoPlay) {
+    activePlayBtn = playBtn;
+    onPlayFn(rate);
+  }
+
+  return {
+    getRate: () => rate,
+    replay: () => {
+      activePlayBtn = playBtn;
+      onPlayFn(rate);
+    }
+  };
 }
