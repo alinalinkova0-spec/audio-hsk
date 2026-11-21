@@ -210,8 +210,8 @@ function home() {
         </div>
         <div style="margin-top:6px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
           <div style="margin-bottom:2px;">💡 <b>Этот сайт можно добавить на главный экран телефона для быстрого доступа:</b></div>
-          <div><b>На iPhone:</b> нажми «Поделиться» внизу экрана → выбери «На экран Домой»</div>
-          <div><b>На Android:</b> нажми «⋮» в правом верхнем углу → выбери «Добавить на гл. экран»</div>
+          <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
+          <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
         </div>
       </section>`;
     app.querySelectorAll('[data-pick-lvl]').forEach(btn => {
