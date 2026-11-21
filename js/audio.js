@@ -351,44 +351,20 @@ export function playFeedback(ok) {
       return;
     }
 
-    if (theme === 'guqin') {
-      const osc = sfxCtx.createOscillator();
-      const gain = sfxCtx.createGain();
-      osc.type = 'triangle';
-      if (ok) {
-        osc.frequency.setValueAtTime(196.0, now);
-        osc.frequency.exponentialRampToValueAtTime(293.66, now + 0.12);
-        osc.frequency.setValueAtTime(293.66, now + 0.13);
-      } else {
-        osc.frequency.setValueAtTime(174.61, now);
-        osc.frequency.exponentialRampToValueAtTime(130.81, now + 0.2);
-      }
-      gain.gain.setValueAtTime(0.001, now);
-      gain.gain.exponentialRampToValueAtTime(0.13, now + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.32);
-      osc.connect(gain);
-      gain.connect(sfxCtx.destination);
-      osc.start(now);
-      osc.stop(now + 0.34);
-      return;
-    }
-
-    if (theme === 'dizi') {
-      const notes = ok ? [880.0, 1046.5, 1318.5] : [659.25, 523.25];
-      notes.forEach((freq, i) => {
-        const t = now + i * 0.06;
+    if (theme === 'bell') {
+      const freqs = ok ? [587.33, 880.0] : [220.0];
+      freqs.forEach((freq, i) => {
         const osc = sfxCtx.createOscillator();
         const gain = sfxCtx.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq * 0.985, t);
-        osc.frequency.exponentialRampToValueAtTime(freq, t + 0.025);
-        gain.gain.setValueAtTime(0.001, t);
-        gain.gain.exponentialRampToValueAtTime(0.085, t + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.18);
+        osc.frequency.setValueAtTime(freq, now);
+        gain.gain.setValueAtTime(0.001, now);
+        gain.gain.exponentialRampToValueAtTime(ok ? (i === 0 ? 0.11 : 0.05) : 0.12, now + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0005, now + (ok ? 0.45 : 0.35));
         osc.connect(gain);
         gain.connect(sfxCtx.destination);
-        osc.start(t);
-        osc.stop(t + 0.19);
+        osc.start(now);
+        osc.stop(now + 0.48);
       });
       return;
     }
