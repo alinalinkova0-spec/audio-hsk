@@ -320,16 +320,13 @@ function startMode(mode) {
       </div>
     </section>`;
   }
-
   function next() {
     if (i > 0) {
       addDaily(mode, 1);
       saveSRS(srs);
     }
-
     const dNow = getDaily();
     const allFourDone = dNow.words >= 12 && dNow.blitz >= 10 && dNow.phrases >= 4 && dNow.stories >= 2;
-
     if (mode === 'words' && i > 0 && dNow.words >= 12 && !goalShown) {
       goalShown = true;
       if (allFourDone) {
@@ -350,24 +347,20 @@ function startMode(mode) {
       };
       return;
     }
-
     if (i >= steps.length) {
       const curLvl = Number(selectedLevel) || 1;
       const lvlDone = getLevelProgress(curLvl) >= 95;
-
       if (lvlDone) {
         const allLevelsDone =
           getLevelProgress(1) >= 95 &&
           getLevelProgress(2) >= 95 &&
           getLevelProgress(3) >= 95 &&
           getLevelProgress(4) >= 95;
-
         if (allLevelsDone) {
           const startIso = localStorage.getItem('hsk_start_date') || new Date().toISOString();
           const daysSpent = Math.max(1, Math.ceil((Date.now() - new Date(startIso).getTime()) / 86400000));
           const learnedTotal = Object.values(srs).filter(s => s.reps >= 1).length;
           const confidentTotal = Object.values(srs).filter(s => s.reps >= 3).length;
-
           app.innerHTML = `<section class="hero" style="max-width:440px;margin:0 auto;padding:24px 16px;">
             <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
               <img src="./goose_all_done.jpg" alt="Все уровни пройдены" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
@@ -379,12 +372,10 @@ function startMode(mode) {
                 <path d="M 32 62 C 44 64 52 74 46 84 C 38 88 28 80 30 68 Z" fill="#181818"/>
               </svg>
             </div>
-
             <h1 style="margin-top:14px;color:var(--jade);font-size:23px;">Поздравляю! 🎉</h1>
             <p style="font-size:15px;line-height:1.5;color:var(--fg);margin-top:8px;">
               Этот сайт больше ничему не сможет тебя научить! Желаю удачи в изучении китайского языка! Я тобой горжусь! 🦆❤️
             </p>
-
             <div class="box" style="text-align:left;margin:16px 0;font-size:14px;line-height:1.7;">
               <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">🏆 Твои итоги пути:</h3>
               <div>⏱ Времени в обучении: <b>${daysSpent} дн.</b></div>
@@ -392,7 +383,6 @@ function startMode(mode) {
               <div>⭐ Узнаёшь мгновенно без подсказок: <b>${confidentTotal} слов</b></div>
               <div>🎓 Уровень восприятия на слух: <b>Уверенный HSK 4</b></div>
             </div>
-
             <div class="box" style="text-align:left;margin:16px 0;">
               <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">💌 Обратная связь автору</h3>
               <p style="color:var(--muted);font-size:13px;margin-top:0;">Напиши, что понравилось или чего не хватило — это поможет сделать тренажёр ещё лучше:</p>
@@ -400,12 +390,10 @@ function startMode(mode) {
               <button id="sendFb" class="cta" style="width:100%;border:none;cursor:pointer;margin-top:10px;">Отправить отзыв</button>
               <p id="fbStatus" style="margin-top:8px;font-size:13px;color:var(--jade);font-weight:600;"></p>
             </div>
-
             <div class="row" style="justify-content:center;gap:12px;margin-top:14px;">
               <a href="#/" class="ghost">На главную</a>
             </div>
           </section>`;
-
           app.querySelector('#sendFb').onclick = () => {
             const text = app.querySelector('#fbText').value.trim();
             const fbStatus = app.querySelector('#fbStatus');
@@ -421,7 +409,6 @@ function startMode(mode) {
           };
           return;
         }
-
         app.innerHTML = `<section class="hero" style="padding:36px 0;">
           <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
             <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
@@ -436,13 +423,10 @@ function startMode(mode) {
         </section>`;
         return;
       }
-
-
       if (allFourDone) {
         showAllPlanDone();
         return;
       }
-
       app.innerHTML = `<section class="hero"><h1>Задание выполнено! ✓</h1>
         <p>Пройдено упражнений: <b>${steps.length}</b></p>
         <div class="row" style="justify-content:center;gap:12px;margin-top:12px;">
@@ -452,7 +436,6 @@ function startMode(mode) {
       app.querySelector('#againBtn').onclick = () => startMode(mode);
       return;
     }
-
     const st = steps[i++];
     if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
     else if (st.type === 'blitz') renderBlitzCard(app, st.word, srs, next, st.meta);
@@ -472,7 +455,6 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
   ]);
   if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
   const raw = await resNew.json();
-
   const shortRu = str => {
     const firstMeaning = String(str || '')
       .split(/[,;/(]/)
@@ -480,7 +462,6 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       .find(Boolean) || '';
     return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
   };
-
   const ruMap = new Map();
   if (resRu && resRu.ok) {
     const ruList = await resRu.json();
@@ -493,10 +474,8 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       }
     });
   }
-
   const parsed = [];
   const needTranslate = [];
-
   for (const item of raw) {
     if (item.hanzi && item.level) {
       const hanzi = String(item.hanzi).trim();
@@ -512,7 +491,6 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       }
       continue;
     }
-
     const lvls = item.l || item.level || Array.of();
     const newLvl = levels.find(n => lvls.includes('n' + n));
     if (!newLvl) continue;
@@ -520,7 +498,6 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
     const form = forms.at(0) || {};
     const hanzi = item.s || item.simplified;
     if (!hanzi) continue;
-
     const found = ruMap.get(hanzi);
     const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
     const pinyin =
@@ -528,7 +505,6 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       form.p ||
       (found && found.pinyin) ||
       '';
-
     if (found && found.ru && /[а-яё]/i.test(found.ru)) {
       parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru: found.ru, level: newLvl });
     } else {
@@ -537,7 +513,6 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       if (en) needTranslate.push({ hanzi, pinyin, en, level: newLvl });
     }
   }
-
   const BATCH = 40;
   for (let i = 0; i < needTranslate.length; i += BATCH) {
     const chunk = needTranslate.slice(i, i + BATCH);
@@ -559,164 +534,10 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       }
     } catch {}
   }
-
   saveVocab(parsed);
   if (stEl) stEl.textContent = `Готово! Загружено ${parsed.length} слов (HSK 1–${maxLvl}).`;
   return parsed;
 }
-
-async function startPlacementTest() {
-  app.innerHTML = `<section class="hero" style="padding:32px 16px;">
-    <h2>Подготовка теста... 🎯</h2>
-    <p id="plLoad" style="color:var(--muted);">Выбираем 24 слова (от лёгких к сложным по HSK 1–4)...</p>
-  </section>`;
-
-  try {
-    const host = 'raw.' + 'github' + 'usercontent.com';
-    const ruUrl = 'https://' + host + '/LiudmilaLV/json_hsk/master/hsk.json';
-    const [resNew, resRu] = await Promise.all([
-      fetch('./hsk.json?v=' + Date.now()),
-      fetch(ruUrl).catch(() => null)
-    ]);
-    if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
-    const raw = await resNew.json();
-
-    const shortRu = str => {
-      const firstMeaning = String(str || '')
-        .split(/[,;/(]/)
-        .map(s => s.trim())
-        .find(Boolean) || '';
-      return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
-    };
-
-    const ruMap = new Map();
-    if (resRu && resRu.ok) {
-      const ruList = await resRu.json();
-      ruList.forEach(w => {
-        if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
-          ruMap.set(w.hanzi, {
-            ru: shortRu(w.translations.rus.at(0)),
-            pinyin: w.pinyin || ''
-          });
-        }
-      });
-    }
-
-    const byLvl = { lvl1: [], lvl2: [], lvl3: [], lvl4: [] };
-    for (const item of raw) {
-      let hanzi = '';
-      let lvl = 0;
-      let pinyin = '';
-      let en = '';
-
-      if (item.hanzi && item.level) {
-        hanzi = String(item.hanzi).trim();
-        lvl = Number(item.level);
-        pinyin = String(item.pinyin || '').trim();
-        en = String(item.ru || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
-      } else {
-        const lvls = item.l || item.level || Array.of();
-        lvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n)) || 0;
-        const forms = item.f || item.forms || Array.of();
-        const form = forms.at(0) || {};
-        hanzi = item.s || item.simplified || '';
-        const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
-        pinyin = (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) || form.p || '';
-        const meanings = form.m || form.meanings || Array.of();
-        en = String(meanings.at(0) || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
-      }
-
-      const key = 'lvl' + lvl;
-      if (!hanzi || !byLvl[key]) continue;
-      const found = ruMap.get(hanzi);
-      const ru = found && found.ru && /[а-яё]/i.test(found.ru) ? found.ru : '';
-      byLvl[key].push({ hanzi, pinyin: pinyin || (found && found.pinyin) || '', ru, en, level: lvl });
-    }
-
-    const testQueue = [];
-    const pickTwo = arr => arr.sort(() => Math.random() - 0.5).slice(0, 2);
-
-    for (const lvl of Array.of(1, 2, 3, 4)) {
-      const list = byLvl['lvl' + lvl];
-      const third = Math.max(2, Math.floor(list.length / 3));
-      const easy = pickTwo(list.slice(0, third)).map(w => ({ ...w, diff: 'easy' }));
-      const mid = pickTwo(list.slice(third, third * 2)).map(w => ({ ...w, diff: 'medium' }));
-      const hard = pickTwo(list.slice(third * 2)).map(w => ({ ...w, diff: 'hard' }));
-      testQueue.push(...easy, ...mid, ...hard);
-    }
-
-    const needTr = testQueue.filter(w => !w.ru && w.en);
-    if (needTr.length) {
-      try {
-        const q = encodeURIComponent(needTr.map(x => x.en).join('\n'));
-        const trHost = 'translate.' + 'google' + 'apis.com';
-        const trRes = await fetch(`https://${trHost}/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=${q}`);
-        if (trRes.ok) {
-          const trData = await trRes.json();
-          const lines = (trData.at(0) || []).map(part => part.at(0)).join('').split('\n');
-          needTr.forEach((item, i) => {
-            const ru = shortRu(lines[i]);
-            if (ru && /[а-яё]/i.test(ru)) item.ru = ru;
-          });
-        }
-      } catch {}
-    }
-
-    const validQueue = testQueue.filter(w => w.ru);
-    const allRuPool = Array.from(new Set(validQueue.map(w => w.ru)));
-
-    let idx = 0;
-    const statsByLvl = {
-      lvl1: { ok: 0, hardOk: 0 },
-      lvl2: { ok: 0, hardOk: 0 },
-      lvl3: { ok: 0, hardOk: 0 },
-      lvl4: { ok: 0, hardOk: 0 }
-    };
-
-    function renderQuestion() {
-      if (idx >= validQueue.length) {
-        let detected = 1;
-        for (const lvl of Array.of(1, 2, 3)) {
-          const st = statsByLvl['lvl' + lvl];
-          if (st.ok >= 5 && st.hardOk >= 1) {
-            detected = lvl + 1;
-          } else {
-            break;
-          }
-        }
-
-        app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
-          <h1>Тест завершён! 🎯</h1>
-          <div class="box" style="text-align:left;margin:14px 0;font-size:14px;line-height:1.7;">
-            <div>HSK 1: <b>${statsByLvl.lvl1.ok}/6</b> верно</div>
-            <div>HSK 2: <b>${statsByLvl.lvl2.ok}/6</b> верно</div>
-            <div>HSK 3: <b>${statsByLvl.lvl3.ok}/6</b> верно</div>
-            <div>HSK 4: <b>${statsByLvl.lvl4.ok}/6</b> верно</div>
-          </div>
-          <p style="font-size:16px;font-weight:700;color:var(--jade);">Рекомендуемый старт: HSK ${detected}</p>
-          <p id="plSaveStatus" style="font-size:14px;color:var(--accent);font-weight:600;margin-top:8px;">Загружаем словарь HSK 1–${detected}...</p>
-        </section>`;
-
-        downloadLevelsUpTo(detected, app.querySelector('#plSaveStatus')).then(() => {
-          localStorage.setItem('hsk_start_lvl', String(detected));
-          selectedLevel = String(detected);
-          selectedLesson = 0;
-          localStorage.setItem('hsk_lvl', selectedLevel);
-          localStorage.setItem('hsk_les', '0');
-          history.replaceState(null, '', '#/');
-          home();
-        });
-        return;
-      }
-
-      const cur = validQueue[idx];
-      const distractors = allRuPool
-        .filter(r => r !== cur.ru)
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 3);
-      const options = Array.of(cur.ru, ...distractors).sort(() => Math.random() - 0.5);
-
-      let playCount = 0;
 
       app.innerHTML = `<div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
@@ -749,16 +570,13 @@ async function startPlacementTest() {
 
       app.querySelector('#plPlay').onclick = playAlternating;
       playAlternating();
-
       const ansBox = app.querySelector('#plAnswers');
       let locked = false;
-
       const showCorrect = () => {
         Array.from(ansBox.children).forEach(x => {
           if (x.textContent === cur.ru) x.classList.add('ok');
         });
       };
-
       options.forEach(opt => {
         const b = document.createElement('button');
         b.className = 'answer';
@@ -782,7 +600,6 @@ async function startPlacementTest() {
         };
         ansBox.appendChild(b);
       });
-
       app.querySelector('#plSkip').onclick = () => {
         if (locked) return;
         locked = true;
@@ -791,7 +608,6 @@ async function startPlacementTest() {
         setTimeout(renderQuestion, 750);
       };
     }
-
     renderQuestion();
   } catch (e) {
     app.innerHTML = `<section class="hero"><h2>Не удалось загрузить тест</h2>
@@ -799,19 +615,16 @@ async function startPlacementTest() {
       <a href="#/" class="cta">Назад</a></section>`;
   }
 }
-
 function stats() {
   const total = Object.keys(srs).length;
   const learned = Object.values(srs).filter(s => s.reps >= 3).length;
   const remOn = localStorage.getItem('hsk_rem_on') === '1';
   const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
-
-  app.innerHTML = `<section>
+   app.innerHTML = `<section>
     <h2>Статистика и офлайн-база</h2>
     <p>Слов в базе устройства: <b>${allWords.length}</b></p>
     <p>В повторении: <b>${total}</b></p>
     <p>Уверенно на слух: <b>${learned}</b></p>
-
     <div class="box">
       <h3>🔔 Ежедневное напоминание</h3>
       <p style="color:var(--muted);font-size:14px;">Напомнит о занятиях, если план на сегодня ещё не выполнен. Для iPhone предварительно добавь сайт на экран <b>«Домой»</b>.</p>
@@ -825,21 +638,18 @@ function stats() {
       </div>
       <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
     </div>
-
     <div class="box">
       <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
       <p style="color:var(--muted);font-size:14px;">Требуется интернет один раз. После загрузки словарь сохранится в браузере и будет работать офлайн.</p>
       <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin-top:8px;">Скачать словарь</button>
       <p id="fetchStatus" style="margin-top:10px;color:var(--accent);"></p>
     </div>
-
     <div class="box">
       <h3>2. Загрузить свой словарь с русским переводом (.txt / .csv)</h3>
       <p style="color:var(--muted);font-size:14px;">Формат строк: <code>иероглиф;пиньинь;перевод;уровень</code></p>
       <input type="file" id="csvFile" accept=".txt,.csv" style="margin-top:8px;">
     </div>
   </section>`;
-
   const remStatus = app.querySelector('#remStatus');
   app.querySelector('#remToggle').onchange = async e => {
     if (e.target.checked) {
@@ -868,7 +678,6 @@ function stats() {
       remStatus.textContent = 'Время напоминания обновлено: ' + e.target.value;
     }
   };
-
   app.querySelector('#testNotify').onclick = async () => {
     if (!('Notification' in window)) {
       remStatus.textContent = 'Уведомления недоступны в этом режиме.';
@@ -885,7 +694,6 @@ function stats() {
       remStatus.textContent = 'Разреши уведомления в настройках браузера.';
     }
   };
-
   app.querySelector('#fetchHsk').onclick = async () => {
     const st = app.querySelector('#fetchStatus');
     st.textContent = 'Загрузка базы HSK 1–4...';
@@ -898,7 +706,6 @@ function stats() {
       ]);
       if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
       const raw = await resNew.json();
-
       const shortRu = str => {
         const firstMeaning = String(str || '')
           .split(/[,;/(]/)
@@ -906,9 +713,7 @@ function stats() {
           .find(Boolean) || '';
         return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
       };
-
       const ruMap = new Map();
-
       if (resRu && resRu.ok) {
         const ruList = await resRu.json();
         ruList.forEach(w => {
