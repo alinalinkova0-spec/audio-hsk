@@ -233,7 +233,7 @@ function home() {
           <div style="position:relative;width:100%;max-width:320px;margin:0 auto;">
             <img src="./goose_all_done.jpg" alt="Все уровни пройдены" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
             <div style="position:absolute;left:32%;top:6%;width:38%;height:19%;background:#FBF7EF;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 8px;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid #F4C430;">
-              Поздравляем! 🎉
+              Поздравляем!
             </div>
             <svg viewBox="0 0 100 100" style="position:absolute;right:0;bottom:23%;width:14%;height:14%;pointer-events:none;">
               <path d="M 0 38 Q 22 48 34 66" fill="none" stroke="#181818" stroke-width="6" stroke-linecap="round"/>
