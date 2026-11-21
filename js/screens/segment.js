@@ -1,6 +1,58 @@
 import { speak, speakDialog } from '../audio.js?v=4';
 import { review, saveSRS } from '../srs.js';
+function makeClickableHanzi(text) {
+  const words = window.__ALL_WORDS || [];
+  if (!words.length) return text;
+  const dict = new Map();
+  for (const w of words) {
+    if (w.hanzi && !dict.has(w.hanzi)) dict.set(w.hanzi, w);
+  }
+  const keys = Array.from(dict.keys()).sort((a, b) => [...b].length - [...a].length);
+  const chars = [...String(text || '')];
+  let out = '';
+  let idx = 0;
 
+  while (idx < chars.length) {
+    let matched = null;
+    for (const k of keys) {
+      const kLen = [...k].length;
+      if (chars.slice(idx, idx + kLen).join('') === k) {
+        matched = dict.get(k);
+        idx += kLen;
+        break;
+      }
+    }
+    if (matched) {
+      const safePinyin = String(matched.pinyin || '').replace(/"/g, '&quot;');
+      const safeRu = String(matched.ru || '').replace(/"/g, '&quot;');
+      out += `<span class="hz-tap" data-hz="${matched.hanzi}" data-py="${safePinyin}" data-ru="${safeRu}" style="border-bottom:1.5px dashed #1E7E5E;cursor:pointer;padding:0 1px;border-radius:4px;">${matched.hanzi}</span>`;
+    } else {
+      out += chars[idx];
+      idx += 1;
+    }
+  }
+  return out;
+}
+
+function bindHanziTaps(container) {
+  let popup = container.querySelector('#hzPopup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'hzPopup';
+    popup.style.cssText = 'display:none;margin-top:8px;padding:8px 12px;background:#FFFDF9;border:1.5px solid var(--jade);border-radius:12px;font-size:14px;color:var(--fg);box-shadow:0 2px 8px rgba(0,0,0,0.06);';
+    container.appendChild(popup);
+  }
+  container.querySelectorAll('.hz-tap').forEach(el => {
+    el.onclick = () => {
+      const hz = el.dataset.hz;
+      const py = el.dataset.py;
+      const ru = el.dataset.ru;
+      speak(hz, { rate: 0.9 });
+      popup.style.display = 'block';
+      popup.innerHTML = `🔊 <b style="font-size:17px;">${hz}</b> <span style="color:#1E7E5E;font-weight:600;">${py}</span> — <b>${ru}</b>`;
+    };
+  });
+}
 export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
   const distractors = allSentences
     .filter(x => x.id !== s.id)
@@ -87,12 +139,15 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
 
     speak(s.hanzi, { rate });
 
-    reveal.hidden = false;
-    reveal.querySelector('#phraseText').innerHTML = `
-      <div>${s.hanzi}</div>
+       reveal.hidden = false;
+    const phraseBox = reveal.querySelector('#phraseText');
+    phraseBox.innerHTML = `
+      <div>${makeClickableHanzi(s.hanzi)}</div>
       <div style="font-size:17px;color:#1E7E5E;margin-top:6px;font-weight:500;">${s.pinyin}</div>
       <div style="font-size:16px;color:#231F20;margin-top:6px;font-weight:600;">${s.ru}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px;">💡 Нажми на подчёркнутое слово, чтобы послушать отдельно</div>
     `;
+    bindHanziTaps(phraseBox);
     reveal.querySelector('#again').onclick = () => speak(s.hanzi, { rate });
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
