@@ -188,11 +188,8 @@ function home() {
   const userStartLvl = Number(localStorage.getItem('hsk_start_lvl') || 0);
   if (allWords.length <= 25 || !userStartLvl) {
     app.innerHTML = `
-      <section class="hero" style="max-width:420px;margin:0 auto;padding:8px 16px 10px;">
-        <div style="width:100%;max-width:210px;margin:0 auto 2px;text-align:center;">
-          <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
-        </div>
-        <h1 style="margin:0 0 4px;font-size:24px;">Привет! 👋</h1>
+      <section class="hero" style="max-width:420px;margin:0 auto;padding:12px 16px 12px;">
+        <h1 style="margin:0 0 4px;font-size:24px;">Привет! </h1>
         <p style="font-size:15px;line-height:1.35;color:var(--fg);margin:0;">
           Это тренажёр аудирования<br>
           по новому <b>HSK 3.0 (1–4 уровни)</b>
@@ -208,10 +205,13 @@ function home() {
           <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:8px;padding:12px;font-size:15px;">🎯 Я не знаю (пройти тест)</button>
         </div>
         <p id="welcomeLoadStatus" style="font-size:13px;color:var(--accent);font-weight:600;margin:2px 0;min-height:18px;"></p>
-        <div style="margin-top:4px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
-          <div>💡 <b>Добавить на экран «Домой»:</b></div>
-          <div>iPhone: «Поделиться» → «На экран Домой»</div>
-          <div>Android: «⋮» → «Добавить на гл. экран»</div>
+        <div style="width:100%;max-width:210px;margin:0 auto;text-align:center;">
+          <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+        </div>
+        <div style="margin-top:6px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
+          <div style="margin-bottom:2px;">💡 <b>Этот сайт можно добавить на главный экран телефона для быстрого доступа:</b></div>
+          <div><b>На iPhone:</b> нажми «Поделиться» внизу экрана → выбери «На экран Домой»</div>
+          <div><b>На Android:</b> нажми «⋮» в правом верхнем углу → выбери «Добавить на гл. экран»</div>
         </div>
       </section>`;
     app.querySelectorAll('[data-pick-lvl]').forEach(btn => {
