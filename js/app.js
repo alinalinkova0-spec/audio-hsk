@@ -1,28 +1,22 @@
 import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=49';
+import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=52';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=10';
 import { speak } from './audio.js?v=4';
-
 const VOCAB_KEY = 'hsk_vocab_v13';
-
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
-
 let selectedLevel = localStorage.getItem('hsk_lvl') || 'all';
 let selectedLesson = +(localStorage.getItem('hsk_les') || 0);
 let lastMode = localStorage.getItem('hsk_mode') || 'words';
-
 const app = document.getElementById('app');
 const srs = loadSRS();
 if (!localStorage.getItem('hsk_start_date')) {
   localStorage.setItem('hsk_start_date', new Date().toISOString());
 }
-
 function getTodayKey() {
   return 'hsk_daily_' + new Date().toISOString().slice(0, 10);
 }
-
 function getDaily() {
   try {
     const raw = JSON.parse(localStorage.getItem(getTodayKey())) || {};
@@ -36,13 +30,11 @@ function getDaily() {
     return { words: 0, blitz: 0, phrases: 0, stories: 0 };
   }
 }
-
 function addDaily(mode, count) {
   const d = getDaily();
   d[mode] = (d[mode] || 0) + count;
   localStorage.setItem(getTodayKey(), JSON.stringify(d));
 }
-
 function loadVocab() {
   try {
     const saved = JSON.parse(localStorage.getItem(VOCAB_KEY));
@@ -50,16 +42,13 @@ function loadVocab() {
   } catch {}
   return defaultWords.map(w => ({ ...w, level: 4 }));
 }
-
 function saveVocab(list) {
   allWords = list;
   window.__ALL_WORDS = list;
   localStorage.setItem(VOCAB_KEY, JSON.stringify(list));
 }
-
 window.addEventListener('hashchange', router);
 router();
-
 function router() {
   const h = location.hash.replace(/^#\/?/, '');
   if (h === 'session') startMode(lastMode);
@@ -71,13 +60,11 @@ function router() {
   else if (h === 'stats') stats();
   else home();
 }
-
 function getFilteredWords() {
   return selectedLevel === 'all'
     ? allWords
     : allWords.filter(w => String(w.level) === String(selectedLevel));
 }
-
 function buildRampQueue(slice) {
   // Сортируем слова урока по освоенности: сначала хорошо знакомые, в конце — сложные/неизученные
   const scored = slice.map(w => {
@@ -86,11 +73,9 @@ function buildRampQueue(slice) {
     const ease = st ? (st.ease || 2.5) : 2.5;
     return { word: w, score: reps * 10 + ease + Math.random() * 0.5 };
   }).sort((a, b) => b.score - a.score);
-
   const easyPool = scored.slice(0, Math.max(5, Math.ceil(scored.length * 0.35))).map(x => x.word);
   const hardPool = scored.slice(-Math.max(5, Math.ceil(scored.length * 0.35))).map(x => x.word);
   const midPool = scored.map(x => x.word);
-
   const used = new Set();
   const pickFrom = (pool, count, tier) => {
     const res = [];
@@ -103,14 +88,12 @@ function buildRampQueue(slice) {
     }
     return res;
   };
-
   const part1 = pickFrom(easyPool, 5, 'easy');
   const part2 = pickFrom(midPool, 5, 'medium');
   const part3 = pickFrom(hardPool, 5, 'hard');
   const rest = pickFrom(midPool, 15 - (part1.length + part2.length + part3.length), 'hard');
   return [...part1, ...part2, ...part3, ...rest];
 }
-
 function getLevelProgress(lvl) {
   const lvlWords = allWords.filter(w => Number(w.level) === lvl);
   if (!lvlWords.length) return 0;
@@ -149,7 +132,6 @@ function home() {
           <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
         </div>
       </section>`;
-
     app.querySelectorAll('[data-pick-lvl]').forEach(btn => {
       btn.onclick = async () => {
         const picked = Number(btn.dataset.pickLvl);
@@ -164,13 +146,11 @@ function home() {
         home();
       };
     });
-
     app.querySelector('#startPlacementBtn').onclick = () => {
       location.hash = '#/placement';
     };
     return;
   }
-
   const p1 = getLevelProgress(1);
   const p2 = getLevelProgress(2);
   const p3 = getLevelProgress(3);
@@ -187,14 +167,12 @@ function home() {
 const filtered = getFilteredWords();
   const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
   if (selectedLesson >= lessonCount) selectedLesson = 0;
-
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
     const from = idx * 50 + 1;
     const to = Math.min((idx + 1) * 50, filtered.length);
     const sel = idx === selectedLesson ? 'selected' : '';
     return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
   }).join('');
-
   const d = getDaily();
   const tasks = Array.of(
     { id: 'words', title: '1. Слова на слух', done: d.words || 0, goal: 12 },
@@ -202,7 +180,6 @@ const filtered = getFilteredWords();
     { id: 'phrases', title: '3. Фразы', done: d.phrases || 0, goal: 4 },
     { id: 'stories', title: '4. Диалоги и тексты', done: d.stories || 0, goal: 2 }
   );
-
   const taskButtons = tasks.map(t => {
     const isDone = t.done >= t.goal;
     const badge = isDone
@@ -222,7 +199,6 @@ const filtered = getFilteredWords();
       : './goose_night.jpg';
   app.innerHTML = `
     <section class="hero">
-
       <h1>听 HSK 3.0 (1–4) — аудирование</h1>
       <p>В офлайн-памяти: <b>${allWords.length}</b> слов нового HSK 3.0</p>
       <div class="controls">
@@ -232,7 +208,6 @@ const filtered = getFilteredWords();
           <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? '' : '🔒 '}HSK 3 (${p3}% / нужно 95% в HSK 2)</option>
           <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? '' : '🔒 '}HSK 4 (${p4}% / нужно 95% в HSK 3)</option>
         </select>
-
         <select id="lesSel">${lessonOptions}</select>
       </div>
       <div style="width:100%;max-width:420px;margin:16px auto 0;display:flex;flex-direction:column;gap:10px;">
@@ -246,9 +221,7 @@ const filtered = getFilteredWords();
    <div style="width:100%;max-width:260px;margin:6px auto 0;text-align:center;overflow:hidden;">
      <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
    </div>
-
     </section>`;
-
   app.querySelector('#lvlSel').onchange = e => {
     selectedLevel = e.target.value;
     selectedLesson = 0;
@@ -262,14 +235,12 @@ const filtered = getFilteredWords();
     localStorage.setItem('hsk_les', String(selectedLesson));
     history.replaceState(null, '', '#/');
   };
- 
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
       location.hash = '#/' + btn.dataset.mode;
     };
   });
 }
-
 function startMode(mode) {
   lastMode = mode;
   localStorage.setItem('hsk_mode', mode);
@@ -283,7 +254,6 @@ function startMode(mode) {
     }
     return hits;
   };
-
   let steps = [];
   if (mode === 'words') {
     const filtered = getFilteredWords();
@@ -301,25 +271,22 @@ function startMode(mode) {
         pool = pool.slice(0, Math.max(4, pool.length - prevSample.length)).concat(prevSample);
       }
     }
-
     const weakMap = JSON.parse(localStorage.getItem('hsk_weakness_v1') || '{}');
     pool.sort((a, b) => {
       const wa = weakMap[a.id] ? (weakMap[a.id].audioErr + weakMap[a.id].toneErr + weakMap[a.id].readErr) : 0;
       const wb = weakMap[b.id] ? (weakMap[b.id].audioErr + weakMap[b.id].toneErr + weakMap[b.id].readErr) : 0;
       return wb - wa;
     });
-
     const ramp = buildRampQueue(pool).slice(0, 12);
-    steps = ramp.map((item, idx) => {
-      let cardType = 'card';
-      if (idx === 4 || idx === 9) cardType = 'tone';
-      else if (idx === 5 || idx === 10) cardType = 'read';
-      return {
-        type: cardType,
-        word: item.word,
-        meta: { tier: item.tier, label: `${idx + 1}/${ramp.length}` }
-      };
-    });
+    const typesPool = Array.of('tone', 'tone', 'read', 'read', 'card', 'card', 'card', 'card', 'card', 'card', 'card', 'card')
+      .slice(0, ramp.length)
+      .sort(() => Math.random() - 0.5);
+
+    steps = ramp.map((item, idx) => ({
+      type: typesPool[idx] || 'card',
+      word: item.word,
+      meta: { tier: item.tier, label: `${idx + 1}/${ramp.length}` }
+    }));
   } else if (mode === 'blitz') {
     const filtered = getFilteredWords();
     if (selectedLesson * 50 >= filtered.length) selectedLesson = 0;
@@ -336,7 +303,6 @@ function startMode(mode) {
         mixedPool = mixedPool.slice(0, 8).concat(prevPick).sort(() => Math.random() - 0.5);
       }
     }
-
     steps = mixedPool.map((w, idx) => ({
       type: 'blitz',
       word: w,
