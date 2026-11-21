@@ -119,12 +119,12 @@ function home() {
       <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
         <h1>Привет! 👋</h1>
         <p style="font-size:15px;line-height:1.5;color:var(--fg);margin-top:8px;">
-          Чтобы всё заработало и потом открывалось даже <b>офлайн без интернета</b>, сделай 3 быстрых шага:
+          Чтобы всё заработало и открывалось даже <b>офлайн без интернета</b>, сделай пару шагов:
         </p>
         <div class="box" style="text-align:left;margin:14px 0;font-size:14px;line-height:1.6;">
           <div>1. Нажми кнопку ниже (или открой вкладку <b>«Статистика»</b> вверху)</div>
-          <div>2. Нажми <b>«Скачать словарь»</b> — база HSK 1–4 сохранится в память устройства</div>
-          <div>3. Вернись в <b>«Задания»</b> и начинай тренировать аудирование!</div>
+          <div>2. Нажми <b>«Скачать словарь»</b> — база HSK 1–4 сохранится в память</div>
+          <div>3. Для удобства и уведомлений добавь сайт на экран <b>«Домой»</b> (на iPhone: <b>«Поделиться» → «На экран Домой»</b>)</div>
         </div>
         <a href="#/stats" class="cta" style="display:inline-block;width:100%;text-align:center;">Перейти в Статистику →</a>
         <div style="width:100%;max-width:210px;margin:14px auto 0;text-align:center;">
@@ -361,11 +361,28 @@ function startMode(mode) {
 function stats() {
   const total = Object.keys(srs).length;
   const learned = Object.values(srs).filter(s => s.reps >= 3).length;
+  const remOn = localStorage.getItem('hsk_rem_on') === '1';
+  const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
+
   app.innerHTML = `<section>
     <h2>Статистика и офлайн-база</h2>
     <p>Слов в базе устройства: <b>${allWords.length}</b></p>
     <p>В повторении: <b>${total}</b></p>
     <p>Уверенно на слух: <b>${learned}</b></p>
+
+    <div class="box">
+      <h3>🔔 Ежедневное напоминание</h3>
+      <p style="color:var(--muted);font-size:14px;">Напомнит о занятиях, если план на сегодня ещё не выполнен. Для iPhone предварительно добавь сайт на экран <b>«Домой»</b>.</p>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;cursor:pointer;">
+          <input type="checkbox" id="remToggle" ${remOn ? 'checked' : ''} style="width:18px;height:18px;">
+          Включить
+        </label>
+        <input type="time" id="remTime" value="${remTime}" style="padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:15px;">
+        <button id="testNotify" class="ghost" style="font-size:13px;padding:6px 12px;">Проверить</button>
+      </div>
+      <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
+    </div>
 
     <div class="box">
       <h3>1. Скачать полный словарь HSK 1–4 в память</h3>
@@ -375,12 +392,57 @@ function stats() {
     </div>
 
     <div class="box">
-    
       <h3>2. Загрузить свой словарь с русским переводом (.txt / .csv)</h3>
       <p style="color:var(--muted);font-size:14px;">Формат строк: <code>иероглиф;пиньинь;перевод;уровень</code></p>
       <input type="file" id="csvFile" accept=".txt,.csv" style="margin-top:8px;">
     </div>
   </section>`;
+
+  const remStatus = app.querySelector('#remStatus');
+  app.querySelector('#remToggle').onchange = async e => {
+    if (e.target.checked) {
+      if (!('Notification' in window)) {
+        remStatus.textContent = 'Браузер не поддерживает уведомления (на iPhone добавь сайт на экран «Домой»).';
+        e.target.checked = false;
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') {
+        remStatus.textContent = 'Разрешение на уведомления не выдано в настройках браузера.';
+        e.target.checked = false;
+        return;
+      }
+      localStorage.setItem('hsk_rem_on', '1');
+      remStatus.textContent = 'Напоминание включено на ' + app.querySelector('#remTime').value;
+    } else {
+      localStorage.setItem('hsk_rem_on', '0');
+      remStatus.textContent = 'Напоминания отключены.';
+    }
+  };
+
+  app.querySelector('#remTime').onchange = e => {
+    localStorage.setItem('hsk_rem_time', e.target.value);
+    if (localStorage.getItem('hsk_rem_on') === '1') {
+      remStatus.textContent = 'Время напоминания обновлено: ' + e.target.value;
+    }
+  };
+
+  app.querySelector('#testNotify').onclick = async () => {
+    if (!('Notification' in window)) {
+      remStatus.textContent = 'Уведомления недоступны в этом режиме.';
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    if (perm === 'granted') {
+      new Notification('听 HSK 1–4 🦆', {
+        body: 'Пора размять слух! Загляни выполнить план на сегодня.',
+        icon: './goose.jpg'
+      });
+      remStatus.textContent = 'Тестовое уведомление отправлено!';
+    } else {
+      remStatus.textContent = 'Разреши уведомления в настройках браузера.';
+    }
+  };
 
   app.querySelector('#fetchHsk').onclick = async () => {
     const st = app.querySelector('#fetchStatus');
@@ -513,3 +575,23 @@ function stats() {
     reader.readAsText(file, 'utf-8');
   };
 }
+
+setInterval(() => {
+  if (localStorage.getItem('hsk_rem_on') !== '1') return;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const target = localStorage.getItem('hsk_rem_time') || '19:00';
+  const now = new Date();
+  const hhmm = String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+  const todaySentKey = 'hsk_rem_sent_' + now.toISOString().slice(0, 10);
+  if (hhmm === target && !localStorage.getItem(todaySentKey)) {
+    const d = getDaily();
+    const doneAll = d.words >= 12 && d.blitz >= 10 && d.phrases >= 4 && d.stories >= 2;
+    localStorage.setItem(todaySentKey, '1');
+    if (!doneAll) {
+      new Notification('听 HSK 1–4 🦆', {
+        body: 'Пора размять слух! План на сегодня ещё ждёт тебя.',
+        icon: './goose.jpg'
+      });
+    }
+  }
+}, 30000);
