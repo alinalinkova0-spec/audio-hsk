@@ -73,10 +73,10 @@ function getDynamicPlan() {
   const dayNum = new Date().getDate();
 
   const weakLabels = {
-    tone: '🎵 Фокус дня: закрепляем тоны и пиньинь',
-    read: '👀 Фокус дня: узнавание иероглифов глазами',
-    audio: '🎧 Фокус дня: тренируем слух и темп речи',
-    balance: '✨ Фокус дня: сбалансированная тренировка'
+    tone: 'Фокус дня: закрепляем тоны и пиньинь',
+    read: 'Фокус дня: узнавание иероглифов глазами',
+    audio: 'Фокус дня: тренируем слух и темп речи',
+    balance: 'Фокус дня: сбалансированная тренировка'
   };
 
   if (mood === 'high') {
@@ -97,9 +97,9 @@ function getDynamicPlan() {
       ? { id: 'stories', title: '3. Лёгкие диалоги', goal: 2 }
       : { id: 'phrases', title: '3. Короткие фразы', goal: stepUp ? 4 : 3 };
     return {
-      focusText: stepUp
-        ? '🌱 Антистресс-режим (3+ дн. подряд — мягко держим темп)'
-        : '🥱 Антистресс-режим: закрепляем знакомое без перегруза',
+     focusText: stepUp
+      ? 'Антистресс-режим (3+ дн. подряд — мягко держим темп)'
+      : 'Антистресс-режим: закрепляем знакомое без перегруза',
       tasks: Array.of(
         { id: 'words', title: '1. Слова на слух (повторение)', goal: stepUp ? 12 : 10 },
         { id: 'blitz', title: '2. Молния', goal: stepUp ? 10 : 8 },
@@ -268,11 +268,9 @@ const filtered = getFilteredWords();
     }
   }
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
-    const from = idx * 50 + 1;
-    const to = Math.min((idx + 1) * 50, filtered.length);
     const pct = getLessonPct(idx);
     const sel = idx === selectedLesson ? 'selected' : '';
-    return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to}) — ${pct}%</option>`;
+    return `<option value="${idx}" ${sel}>Урок ${idx + 1} — ${pct}%</option>`;
   }).join('');
   const d = getDaily();
   const curMood = getTodayMood();
@@ -346,25 +344,32 @@ const filtered = getFilteredWords();
         if (playRes && typeof playRes.then === 'function') {
           await playRes;
         } else {
-          await new Promise(r => setTimeout(r, 2200));
-        }
-        setTimeout(() => home(), 1000);
-      };
-    });
-    return;
-  }
-  const taskButtons = plan.tasks.map(t => {
-    const doneCount = d[t.id] || 0;
-    const isDone = doneCount >= t.goal;
-    const badge = isDone
-      ? `<span style="color:#4ade80;font-weight:700;font-size:18px;">✓ ${doneCount}/${t.goal}</span>`
-      : `<span style="color:var(--muted);font-size:14px;">${doneCount}/${t.goal}</span>`;
-    return `
-      <button class="ans" data-mode="${t.id}" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-size:16px;border-color:${isDone ? '#4ade80' : ''};">
-        <span>${t.title}</span>
-        ${badge}
-      </button>`;
-  }).join('');
+        await new Promise(r => setTimeout(r, 3500));
+      }
+      setTimeout(() => home(), 2500);
+    };
+  });
+  return;
+}
+
+const taskButtons = plan.tasks.map((t, idx) => {
+  const doneCount = d[t.id] || 0;
+  const isDone = doneCount >= t.goal;
+  const cleanTitle = t.title.replace(/^\d+\.\s*/, '');
+  const numBadge = isDone
+    ? `<span style="width:26px;height:26px;border-radius:50%;background:var(--jade);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">✓</span>`
+    : `<span style="width:26px;height:26px;border-radius:50%;background:#EDF5F0;color:var(--jade);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${idx + 1}</span>`;
+  const todayColor = isDone ? 'var(--jade)' : (doneCount > 0 ? 'var(--beak)' : 'var(--fg)');
+  return `
+    <button class="ans" data-mode="${t.id}" style="display:grid;grid-template-columns:1fr 56px 56px;align-items:center;gap:6px;padding:12px 14px;border-color:${isDone ? 'var(--jade)' : ''};background:${isDone ? '#F4FAF6' : ''};">
+      <span style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--fg);text-align:left;line-height:1.25;">
+        ${numBadge}
+        <span>${cleanTitle}</span>
+      </span>
+      <span style="text-align:center;font-size:16px;font-weight:700;color:${todayColor};">${doneCount}</span>
+      <span style="text-align:center;font-size:15px;font-weight:600;color:var(--muted);">${t.goal}</span>
+    </button>`;
+}).join('');
 
   const hr = new Date().getHours();
   const gooseImg = (hr >= 6 && hr < 10)
@@ -397,11 +402,13 @@ const filtered = getFilteredWords();
       </div>
       ${levelUpBanner}
       <div style="width:100%;max-width:420px;margin:14px auto 0;display:flex;flex-direction:column;gap:10px;">
-        <div style="text-align:left;font-size:12px;color:var(--jade);font-weight:600;padding:0 6px;">${plan.focusText}</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 6px;">
-          <span style="font-size:14px;font-weight:600;color:var(--fg);">План на сегодня:</span>
-          <span style="font-size:12px;color:var(--muted);">Сегодня / норма</span>
+        <div style="text-align:center;font-size:13px;color:var(--jade);font-weight:600;padding:0 6px;">${plan.focusText}</div>
+        <div style="display:grid;grid-template-columns:1fr 56px 56px;align-items:baseline;gap:6px;padding:0 14px;">
+          <span style="font-size:14px;font-weight:700;color:var(--fg);text-align:left;">План на сегодня:</span>
+          <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Сегодня</span>
+          <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Норма</span>
         </div>
+
         ${taskButtons}
       </div>
 
