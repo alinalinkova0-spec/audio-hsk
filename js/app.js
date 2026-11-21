@@ -121,17 +121,14 @@ function home() {
       <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
         <h1>Привет! 👋</h1>
         <p style="font-size:15px;line-height:1.45;color:var(--fg);margin-top:8px;margin-bottom:4px;">
-          Чтобы всё заработало
-        </p>
-        <p style="font-size:15px;line-height:1.45;color:var(--fg);margin:0 0 4px;">
-          и открывалось <b>офлайн даже без интернета</b>,
+          Это тренажёр аудирования по новому <b>HSK 3.0 (1–4 уровни)</b>.
         </p>
         <p style="font-size:15px;line-height:1.45;color:var(--fg);margin:0 0 12px;">
-          сделай 2 быстрых шага:
+          Чтобы всё заработало (и открывалось даже без интернета), сделай 2 шага:
         </p>
         <div class="box" style="text-align:left;margin:12px 0;font-size:14px;line-height:1.6;">
-          <div><b>1. Скачай словарь:</b> открой <b>«Статистику»</b> (кнопка ниже) и нажми <b>«Скачать словарь»</b>.</div>
-          <div style="margin-top:8px;"><b>2. Добавь на экран «Домой»</b> — для быстрого входа и уведомлений:</div>
+          <div><b>1. Скачай словарь:</b> перейди в <b>«Статистику»</b> (кнопка ниже) и обязательно загрузи базу слов. Там же по желанию можно настроить напоминания.</div>
+          <div style="margin-top:8px;"><b>2. Добавь сайт на экран «Домой»</b> — для быстрого входа и работы уведомлений:</div>
           <ul style="margin:4px 0 0 18px;padding:0;line-height:1.55;">
             <li><b>iPhone:</b> «Поделиться» → <b>«На экран Домой»</b></li>
             <li><b>Android:</b> «⋮» (меню) → <b>«Добавить на гл. экран»</b></li>
@@ -197,59 +194,9 @@ function home() {
       : './goose_night.jpg';
   app.innerHTML = `
     <section class="hero">
- 
-      <!-- PREVIEW START -->
-      <div id="previewBox" class="box" style="margin-bottom:20px;border:2px dashed var(--accent);background:#FFFDF9;cursor:pointer;user-select:none;" title="Нажми на картинку, чтобы переключить">
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;">
-          <span id="prevTitle">1/4 • Первый вход</span>
-          <span style="color:var(--muted);font-weight:500;">👆 Нажми на картинку</span>
-        </div>
 
-        <div id="prevSlide0">
-          <div style="width:100%;max-width:210px;margin:0 auto;">
-            <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
-          </div>
-          <div style="margin-top:8px;font-weight:700;font-size:16px;">Привет! 👋 Сделай 2 быстрых шага</div>
-        </div>
-
-        <div id="prevSlide1" style="display:none;">
-          <div style="width:100%;max-width:240px;margin:0 auto;">
-            <img src="./goose_plan_done.gif" alt="План на сегодня выполнен" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
-          </div>
-          <div style="margin-top:8px;color:var(--jade);font-weight:800;font-size:20px;">План на сегодня выполнен!!! 🎉</div>
-        </div>
-
-        <div id="prevSlide2" style="display:none;">
-          <div style="position:relative;width:100%;max-width:300px;margin:0 auto;">
-            <img src="./goose_win.jpg" alt="Уровень пройден" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
-            <div style="position:absolute;left:46%;right:0;top:28%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;line-height:1.3;color:var(--jade);">
-              <div>УСПЕШНО ПРОЙДЕН</div>
-              <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK 1 🎉</div>
-            </div>
-          </div>
-        </div>
-
-        <div id="prevSlide3" style="display:none;">
-          <div style="position:relative;width:100%;max-width:320px;margin:0 auto;">
-            <img src="./goose_all_done.jpg" alt="Все уровни пройдены" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
-            <div style="position:absolute;left:32%;top:6%;width:38%;height:19%;background:#FBF7EF;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 8px;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid #F4C430;">
-              Поздравляем!
-            </div>
-            <svg viewBox="0 0 100 100" style="position:absolute;right:0;bottom:23%;width:14%;height:14%;pointer-events:none;">
-              <path d="M 0 38 Q 22 48 34 66" fill="none" stroke="#181818" stroke-width="6" stroke-linecap="round"/>
-              <path d="M 32 62 C 44 64 52 74 46 84 C 38 88 28 80 30 68 Z" fill="#181818"/>
-            </svg>
-          </div>
-          <div style="margin-top:10px;color:var(--jade);font-weight:800;font-size:19px;">Поздравляю! 🎉</div>
-          <p style="font-size:13px;line-height:1.45;color:var(--fg);margin:6px 0 0;">
-            Этот сайт больше ничему не сможет тебя научить! Желаю удачи в изучении китайского языка! Я тобой горжусь! 🦆❤️
-          </p>
-        </div>
-      </div>
-      <!-- PREVIEW END -->
-
-      <h1>听 HSK 1–4 — аудирование</h1>
-      <p>В офлайн-памяти: <b>${allWords.length}</b> слов</p>
+      <h1>听 HSK 3.0 (1–4) — аудирование</h1>
+      <p>В офлайн-памяти: <b>${allWords.length}</b> слов нового HSK 3.0</p>
       <div class="controls">
         <select id="lvlSel">
           <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
@@ -287,19 +234,7 @@ function home() {
     localStorage.setItem('hsk_les', String(selectedLesson));
     history.replaceState(null, '', '#/');
   };
-
-  const prevBox = app.querySelector('#previewBox');
-  if (prevBox) {
-    let slideIdx = 0;
-    const titles = ['1/4 • Первый вход', '2/4 • План на сегодня выполнен', '3/4 • Пройден один уровень HSK', '4/4 • Пройдены все 4 уровня HSK'];
-    prevBox.onclick = () => {
-      app.querySelector('#prevSlide' + slideIdx).style.display = 'none';
-      slideIdx = (slideIdx + 1) % 4;
-      app.querySelector('#prevSlide' + slideIdx).style.display = 'block';
-      app.querySelector('#prevTitle').textContent = titles[slideIdx];
-    };
-  }
-  
+ 
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
       location.hash = '#/' + btn.dataset.mode;
