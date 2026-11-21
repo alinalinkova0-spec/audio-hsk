@@ -35,6 +35,89 @@ function addDaily(mode, count) {
   d[mode] = (d[mode] || 0) + count;
   localStorage.setItem(getTodayKey(), JSON.stringify(d));
 }
+function getTodayMoodKey() {
+  return 'hsk_mood_' + new Date().toISOString().slice(0, 10);
+}
+
+function getTodayMood() {
+  return localStorage.getItem(getTodayMoodKey()) || '';
+}
+
+function setTodayMood(mood) {
+  localStorage.setItem(getTodayMoodKey(), mood);
+}
+
+function getMainWeakness() {
+  try {
+    const data = JSON.parse(localStorage.getItem('hsk_weakness_v1') || '{}');
+    let audio = 0, tone = 0, read = 0;
+    for (const v of Object.values(data)) {
+      audio += v.audioErr || 0;
+      tone += v.toneErr || 0;
+      read += v.readErr || 0;
+    }
+    const max = Math.max(audio, tone, read);
+    if (max === 0) return 'balance';
+    if (tone === max) return 'tone';
+    if (read === max) return 'read';
+    return 'audio';
+  } catch {
+    return 'balance';
+  }
+}
+
+function getDynamicPlan() {
+  const mood = getTodayMood() || 'normal';
+  const weak = getMainWeakness();
+  const dayNum = new Date().getDate();
+
+  const weakLabels = {
+    tone: '🎵 Фокус дня: закрепляем тоны и пиньинь',
+    read: '👀 Фокус дня: узнавание иероглифов глазами',
+    audio: '🎧 Фокус дня: тренируем слух и темп речи',
+    balance: '✨ Фокус дня: сбалансированная тренировка'
+  };
+
+  if (mood === 'high') {
+    return {
+      focusText: weakLabels[weak],
+      tasks: Array.of(
+        { id: 'words', title: '1. Слова на слух (усиленный)', goal: 20 },
+        { id: 'blitz', title: '2. Молния на скорость', goal: 15 },
+        { id: 'phrases', title: '3. Фразы в потоке', goal: 6 },
+        { id: 'stories', title: '4. Диалоги и тексты', goal: 3 }
+      )
+    };
+  }
+
+  if (mood === 'tired') {
+    const thirdTask = dayNum % 2 === 0
+      ? { id: 'stories', title: '3. Лёгкие диалоги', goal: 2 }
+      : { id: 'phrases', title: '3. Короткие фразы', goal: 3 };
+    return {
+      focusText: '😴 Антистресс-режим: закрепляем знакомое без перегруза',
+      tasks: Array.of(
+        { id: 'words', title: '1. Слова на слух (повторение)', goal: 10 },
+        { id: 'blitz', title: '2. Молния', goal: 8 },
+        thirdTask
+      )
+    };
+  }
+
+  const rotateTask = dayNum % 2 === 0
+    ? { id: 'stories', title: '3. Диалоги и тексты', goal: 2 }
+    : { id: 'phrases', title: '3. Фразы', goal: 5 };
+
+  return {
+    focusText: weakLabels[weak],
+    tasks: Array.of(
+      { id: 'words', title: '1. Слова на слух', goal: 15 },
+      { id: 'blitz', title: '2. Молния', goal: 12 },
+      rotateTask
+    )
+  };
+}
+
 function loadVocab() {
   try {
     const saved = JSON.parse(localStorage.getItem(VOCAB_KEY));
