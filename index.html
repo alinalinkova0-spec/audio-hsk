@@ -3,24 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HSK 1–4 — аудирование</title>
+<title>HSK 3.0 听力训练</title>
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f1115">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="topbar">
-    <a href="#/" class="logo">听 HSK 1–4</a>
-    <nav>
-      <a href="#/">Задания</a>
-      <a href="#/stats">Словарь</a>
-      <a href="#/settings">Настройки</a>
-    </nav>
-  </header>
+ <header class="topbar" style="justify-content:center;">
+  <nav style="margin:0 auto;">
+    <a href="#/">Задания</a>
+    <a href="#/stats">Словарь</a>
+    <a href="#/settings">Настройки</a>
+  </nav>
+</header>
   <main id="app"></main>
-  <script type="module" src="js/app.js?v=51"></script>
+<script type="module" src="js/app.js?v=55"></script>
   <script>
-    if ('serviceWorker' in navigator) {
+  if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
     }
   </script>
