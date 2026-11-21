@@ -140,6 +140,7 @@ function router() {
   else if (h === 'phrases') startMode('phrases');
   else if (h === 'stories') startMode('stories');
   else if (h === 'placement') startPlacementTest();
+  else if (h === 'levelup') startLevelUpTest();
   else if (h === 'stats') stats();
   else home();
 }
@@ -327,7 +328,16 @@ const filtered = getFilteredWords();
     : (hr >= 10 && hr < 21)
       ? './goose.jpg'
       : './goose_night.jpg';
-
+  const streak = Number(localStorage.getItem('hsk_streak') || 0);
+  const nextLvl = curLvlNum + 1;
+  const canLevelUp = streak >= 10 && curLvlNum < 4;
+  const levelUpBanner = canLevelUp
+    ? `<div class="box" style="width:100%;max-width:420px;margin:12px auto 0;background:#FFF8E7;border-color:#F59E0B;text-align:left;padding:12px;">
+         <div style="font-weight:700;font-size:14px;color:#B45309;">🔥 Отличная серия: ${streak} верных ответов подряд!</div>
+         <div style="font-size:13px;color:var(--fg);margin:4px 0 8px;">Хочешь пройти быстрый тест из 10 слов, чтобы досрочно открыть <b>HSK ${nextLvl}</b>?</div>
+         <a href="#/levelup" class="cta" style="padding:8px 14px;font-size:13px;display:inline-block;">🚀 Проверить и открыть HSK ${nextLvl}</a>
+       </div>`
+    : '';
   app.innerHTML = `
     <section class="hero">
       <h1>听 HSK 3.0 (1–4) — аудирование</h1>
@@ -341,7 +351,7 @@ const filtered = getFilteredWords();
         </select>
         <select id="lesSel">${lessonOptions}</select>
       </div>
-
+      ${levelUpBanner}
       <div class="box" style="width:100%;max-width:420px;margin:14px auto 0;text-align:left;padding:12px;">
         <div style="font-size:14px;font-weight:700;margin-bottom:8px;">🦆 Как ты сегодня? Настроим план:</div>
         <div style="display:flex;flex-direction:column;gap:7px;">
@@ -964,6 +974,101 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
     app.innerHTML = `<section class="hero"><h2>Не удалось загрузить тест</h2>
       <p style="color:var(--accent);">${e.message}</p>
       <a href="#/" class="cta">Назад</a></section>`;
+  }
+async function startLevelUpTest() {
+  const curLvl = Number(selectedLevel) || 1;
+  const targetLvl = Math.min(4, curLvl + 1);
+
+  app.innerHTML = `<section class="hero" style="padding:32px 16px;">
+    <h2>Экспресс-проверка на HSK ${targetLvl} 🚀</h2>
+    <p id="luStatus" style="color:var(--muted);">Готовим 10 проверочных слов...</p>
+  </section>`;
+
+  try {
+    await downloadLevelsUpTo(targetLvl, app.querySelector('#luStatus'));
+    const curPool = allWords.filter(w => Number(w.level) === curLvl && /[а-яё]/i.test(w.ru));
+    const nextPool = allWords.filter(w => Number(w.level) === targetLvl && /[а-яё]/i.test(w.ru));
+
+    const pick = (arr, n) => Array.from(arr).sort(() => Math.random() - 0.5).slice(0, n);
+    const queue = pick(curPool, 5).concat(pick(nextPool, 5)).sort(() => Math.random() - 0.5);
+    const ruPool = Array.from(new Set(allWords.filter(w => /[а-яё]/i.test(w.ru)).map(w => w.ru)));
+
+    let idx = 0;
+    let score = 0;
+
+    function renderStep() {
+      if (idx >= queue.length) {
+        const passed = score >= 8;
+        if (passed) {
+          localStorage.setItem('hsk_start_lvl', String(targetLvl));
+          selectedLevel = String(targetLvl);
+          selectedLesson = 0;
+          localStorage.setItem('hsk_lvl', selectedLevel);
+          localStorage.setItem('hsk_les', '0');
+        }
+        localStorage.setItem('hsk_streak', '0');
+
+        app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
+          <h1>${passed ? `Уровень HSK ${targetLvl} открыт! 🎉` : 'Почти получилось! 💪'}</h1>
+          <p style="font-size:16px;margin:10px 0;">Верных ответов: <b>${score} из ${queue.length}</b> (нужно минимум 8)</p>
+          <p style="font-size:14px;color:var(--muted);">${passed ? 'Словарь нового уровня уже загружен, можно приступать к занятиям.' : 'Ещё немного практики на текущем уровне, и следующая попытка точно удастся!'}</p>
+          <a href="#/" class="cta" style="margin-top:14px;display:inline-block;">Перейти к занятиям</a>
+        </section>`;
+        return;
+      }
+
+      const cur = queue[idx];
+      const distractors = ruPool.filter(r => r !== cur.ru).sort(() => Math.random() - 0.5).slice(0, 3);
+      const opts = Array.of(cur.ru, ...distractors).sort(() => Math.random() - 0.5);
+      let playCount = 0;
+
+      app.innerHTML = `<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
+          <span style="color:var(--accent);font-weight:700;">🚀 Проверка на HSK ${targetLvl}</span>
+          <span style="color:var(--muted);">${idx + 1} / ${queue.length}</span>
+        </div>
+        <div class="card-audio" style="flex-direction:column;align-items:center;gap:8px;">
+          <button id="luPlay" class="big-play" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <span style="font-size:12px;color:var(--muted);">Нажми для повтора медленнее</span>
+        </div>
+        <p class="prompt">Выбери перевод услышанного слова</p>
+        <div id="luAns" class="answers" style="grid-template-columns:1fr;"></div>
+      </div>`;
+
+      const play = () => {
+        speak(cur.hanzi, { rate: playCount % 2 === 1 ? 0.72 : 1.0 });
+        playCount += 1;
+      };
+      app.querySelector('#luPlay').onclick = play;
+      play();
+
+      const box = app.querySelector('#luAns');
+      let locked = false;
+      opts.forEach(opt => {
+        const b = document.createElement('button');
+        b.className = 'answer';
+        b.style.fontSize = '16px';
+        b.style.padding = '13px';
+        b.textContent = opt;
+        b.onclick = () => {
+          if (locked) return;
+          locked = true;
+          const ok = opt === cur.ru;
+          b.classList.add(ok ? 'ok' : 'bad');
+          if (ok) score += 1;
+          else Array.from(box.children).forEach(x => { if (x.textContent === cur.ru) x.classList.add('ok'); });
+          idx += 1;
+          setTimeout(renderStep, 600);
+        };
+        box.appendChild(b);
+      });
+    }
+
+    renderStep();
+  } catch (e) {
+    app.innerHTML = `<section class="hero"><h2>Ошибка теста</h2><p>${e.message}</p><a href="#/" class="cta">Назад</a></section>`;
   }
 }
 function stats() {
