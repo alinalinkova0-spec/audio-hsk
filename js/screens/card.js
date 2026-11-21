@@ -209,10 +209,12 @@ speak(word.hanzi, { rate });
     done = true;
     const ok = o.id === word.id;
     btn.classList.add(ok ? 'ok' : 'bad');
-    if (!ok) [...answerEl.children].forEach(b => {
-      if (b.textContent === word.hanzi) b.classList.add('ok');
-    });
-
+     if (!ok) {
+      recordWeakness(word.id, 'audioErr');
+      [...answerEl.children].forEach(b => {
+        if (b.textContent === word.hanzi) b.classList.add('ok');
+      });
+    }
   speak(o.hanzi, { rate });
 
       const wrongHint = (!ok && o.pinyin)
@@ -235,6 +237,133 @@ speak(word.hanzi, { rate });
       };
     });
   }
+}
+export function renderReadCard(root, word, srsState, onDone, meta = {}) {
+  const all = window.__ALL_WORDS || [];
+  const mainRu = str => String(str || '').split(/[,;/]/).at(0).trim();
+  const isRu = str => /[а-яё]/i.test(str) && !String(str).includes('MYMEMORY');
+
+  const validPool = all.filter(
+    w => w.id !== word.id && isRu(w.ru) && mainRu(w.ru) && mainRu(w.ru) !== mainRu(word.ru)
+  );
+  const others = shuffle(validPool).slice(0, 3);
+  const opts = shuffle(Array.of(word, ...others));
+
+  root.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
+        <span style="color:#1E7E5E;font-weight:700;">👀 Чтение без звука</span>
+        <span style="color:var(--muted);">${meta.label || ''}</span>
+      </div>
+      <div style="text-align:center;padding:18px 0 12px;">
+        <div style="font-size:48px;font-weight:800;letter-spacing:2px;color:var(--fg);">${word.hanzi}</div>
+        <div id="readPinyin" style="font-size:18px;color:var(--jade);margin-top:6px;min-height:24px;"></div>
+      </div>
+      <p class="prompt">Узнай иероглиф глазами и выбери перевод</p>
+      <div class="answers" id="answers" style="grid-template-columns:1fr;"></div>
+      <div id="readFooter" style="text-align:center;margin-top:12px;"></div>
+    </div>`;
+
+  const answerEl = root.querySelector('#answers');
+  const pinyinEl = root.querySelector('#readPinyin');
+  const footerEl = root.querySelector('#readFooter');
+  let done = false;
+
+  opts.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'answer';
+    b.style.fontSize = '17px';
+    b.style.padding = '13px';
+    b.textContent = mainRu(o.ru);
+    b.onclick = () => {
+      if (done) return;
+      done = true;
+      const ok = o.id === word.id;
+      b.classList.add(ok ? 'ok' : 'bad');
+      if (!ok) {
+        recordWeakness(word.id, 'readErr');
+        Array.from(answerEl.children).forEach(x => {
+          if (x.textContent === mainRu(word.ru)) x.classList.add('ok');
+        });
+      }
+      pinyinEl.textContent = word.pinyin || '';
+      speak(word.hanzi, { rate: 0.95 });
+      review(srsState, word.id, ok ? 3 : 0);
+      saveSRS(srsState);
+
+      footerEl.innerHTML = `<button id="readNext" class="cta" style="border:none;cursor:pointer;padding:10px 24px;">Дальше →</button>`;
+      footerEl.querySelector('#readNext').onclick = onDone;
+    };
+    answerEl.appendChild(b);
+  });
+}
+
+export function renderToneCard(root, word, srsState, onDone, meta = {}) {
+  const variants = generateToneVariants(word.pinyin);
+  if (variants.length < 3) {
+    renderCard(root, word, srsState, onDone, meta);
+    return;
+  }
+
+  const opts = shuffle(variants).slice(0, 4);
+  if (!opts.includes(word.pinyin.trim())) {
+    opts[0] = word.pinyin.trim();
+  }
+  const finalOpts = shuffle(opts);
+
+  root.innerHTML = `
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;font-size:13px;">
+        <span style="color:#B45309;font-weight:700;">🎵 Охота на тоны</span>
+        <span style="color:var(--muted);">${meta.label || ''}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:8px;padding:8px 0;">
+        <button id="play" class="big-play" style="width:82px;height:82px;display:flex;align-items:center;justify-content:center;padding:0;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <div style="font-size:34px;font-weight:800;margin-top:4px;">${word.hanzi}</div>
+        <div style="font-size:16px;color:var(--muted);">${word.ru}</div>
+      </div>
+      <p class="prompt">Выбери правильный тон пиньиня</p>
+      <div class="answers" id="answers" style="grid-template-columns:1fr 1fr;gap:10px;"></div>
+      <div id="toneFooter" style="text-align:center;margin-top:12px;"></div>
+    </div>`;
+
+  const answerEl = root.querySelector('#answers');
+  const footerEl = root.querySelector('#toneFooter');
+  let done = false;
+
+  root.querySelector('#play').onclick = () => speak(word.hanzi, { rate: 0.9 });
+  speak(word.hanzi, { rate: 0.9 });
+
+  finalOpts.forEach(pOpt => {
+    const b = document.createElement('button');
+    b.className = 'answer';
+    b.style.fontSize = '19px';
+    b.style.fontWeight = '700';
+    b.style.textAlign = 'center';
+    b.style.padding = '14px';
+    b.textContent = pOpt;
+    b.onclick = () => {
+      if (done) return;
+      done = true;
+      const ok = pOpt === word.pinyin.trim();
+      b.classList.add(ok ? 'ok' : 'bad');
+      if (!ok) {
+        recordWeakness(word.id, 'toneErr');
+        Array.from(answerEl.children).forEach(x => {
+          if (x.textContent === word.pinyin.trim()) x.classList.add('ok');
+        });
+      }
+      speak(word.hanzi, { rate: 0.85 });
+      review(srsState, word.id, ok ? 3 : 0);
+      saveSRS(srsState);
+
+      footerEl.innerHTML = `<button id="toneNext" class="cta" style="border:none;cursor:pointer;padding:10px 24px;">Дальше →</button>`;
+      footerEl.querySelector('#toneNext').onclick = onDone;
+    };
+    answerEl.appendChild(b);
+  });
 }
 export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   const all = window.__ALL_WORDS || [];
