@@ -319,3 +319,51 @@ export function mountAudioControl(container, onPlayFn, { autoPlay = true } = {})
     }
   };
 }
+let sfxCtx = null;
+
+export function playFeedback(ok) {
+  if (localStorage.getItem('hsk_sfx_off') === '1') return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    if (!sfxCtx) sfxCtx = new AC();
+    if (sfxCtx.state === 'suspended') sfxCtx.resume();
+
+    const now = sfxCtx.currentTime;
+    if (ok) {
+      // Светлый нефритовый перезвон по пентатонике (Соль4 -> Ре5)
+      const notes = [392.0, 587.33];
+      notes.forEach((freq, i) => {
+        const t = now + i * 0.075;
+        const osc = sfxCtx.createOscillator();
+        const gain = sfxCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.exponentialRampToValueAtTime(0.11, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.19);
+        osc.connect(gain);
+        gain.connect(sfxCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.2);
+      });
+    } else {
+      // Мягкий бамбуковый отклик вниз (Ми4 -> Си3)
+      const notes = [329.63, 246.94];
+      notes.forEach((freq, i) => {
+        const t = now + i * 0.07;
+        const osc = sfxCtx.createOscillator();
+        const gain = sfxCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.exponentialRampToValueAtTime(0.08, t + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.15);
+        osc.connect(gain);
+        gain.connect(sfxCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.16);
+      });
+    }
+  } catch {}
+}
