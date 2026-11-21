@@ -324,7 +324,9 @@ const filtered = getFilteredWords();
     });
     return;
   }
-
+  const taskButtons = plan.tasks.map(t => {
+    const doneCount = d[t.id] || 0;
+    const isDone = doneCount >= t.goal;
     const badge = isDone
       ? `<span style="color:#4ade80;font-weight:700;font-size:18px;">✓ ${doneCount}/${t.goal}</span>`
       : `<span style="color:var(--muted);font-size:14px;">${doneCount}/${t.goal}</span>`;
