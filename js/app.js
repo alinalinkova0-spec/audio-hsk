@@ -1,6 +1,6 @@
 import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
-import { renderCard, renderBlitzCard } from './screens/card.js?v=48';
+import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=49';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=10';
 import { speak } from './audio.js?v=4';
 
@@ -302,12 +302,24 @@ function startMode(mode) {
       }
     }
 
+    const weakMap = JSON.parse(localStorage.getItem('hsk_weakness_v1') || '{}');
+    pool.sort((a, b) => {
+      const wa = weakMap[a.id] ? (weakMap[a.id].audioErr + weakMap[a.id].toneErr + weakMap[a.id].readErr) : 0;
+      const wb = weakMap[b.id] ? (weakMap[b.id].audioErr + weakMap[b.id].toneErr + weakMap[b.id].readErr) : 0;
+      return wb - wa;
+    });
+
     const ramp = buildRampQueue(pool).slice(0, 12);
-    steps = ramp.map((item, idx) => ({
-      type: 'card',
-      word: item.word,
-      meta: { tier: item.tier, label: `${idx + 1}/${ramp.length}` }
-    }));
+    steps = ramp.map((item, idx) => {
+      let cardType = 'card';
+      if (idx === 4 || idx === 9) cardType = 'tone';
+      else if (idx === 5 || idx === 10) cardType = 'read';
+      return {
+        type: cardType,
+        word: item.word,
+        meta: { tier: item.tier, label: `${idx + 1}/${ramp.length}` }
+      };
+    });
   } else if (mode === 'blitz') {
     const filtered = getFilteredWords();
     if (selectedLesson * 50 >= filtered.length) selectedLesson = 0;
