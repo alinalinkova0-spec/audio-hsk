@@ -9,10 +9,52 @@ function stripTones(p) {
     .replace(/[^a-z0-9]/g, '');
 }
 
-function randomRate(tier) {
-  if (tier === 'easy') return +(0.9 + Math.random() * 0.1).toFixed(2);
-  if (tier === 'hard') return +(1.0 + Math.random() * 0.18).toFixed(2);
-  return +(0.92 + Math.random() * 0.18).toFixed(2);
+function recordWeakness(wordId, type) {
+  try {
+    const key = 'hsk_weakness_v1';
+    const data = JSON.parse(localStorage.getItem(key) || '{}');
+    if (!data[wordId]) data[wordId] = { audioErr: 0, toneErr: 0, readErr: 0 };
+    data[wordId][type] = (data[wordId][type] || 0) + 1;
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+}
+
+function generateToneVariants(pinyin) {
+  const clean = String(pinyin || '').trim();
+  if (!clean) return [];
+  const TONE_MAP = {
+    a: ['ā', 'á', 'ǎ', 'à'],
+    e: ['ē', 'é', 'ě', 'è'],
+    i: ['ī', 'í', 'ǐ', 'ì'],
+    o: ['ō', 'ó', 'ǒ', 'ò'],
+    u: ['ū', 'ú', 'ǔ', 'ù'],
+    ü: ['ǖ', 'ǘ', 'ǚ', 'ǜ']
+  };
+  const ALL_MARKED = Object.values(TONE_MAP).flat();
+  const chars = [...clean];
+  let targetIdx = -1;
+  let baseVowel = '';
+
+  for (let idx = chars.length - 1; idx >= 0; idx--) {
+    const ch = chars[idx].toLowerCase();
+    for (const [vowel, forms] of Object.entries(TONE_MAP)) {
+      if (forms.includes(ch)) {
+        targetIdx = idx;
+        baseVowel = vowel;
+        break;
+      }
+    }
+    if (targetIdx !== -1) break;
+  }
+
+  if (targetIdx === -1) return [];
+  const variants = new Set([clean]);
+  for (const toneChar of TONE_MAP[baseVowel]) {
+    const copy = [...chars];
+    copy[targetIdx] = toneChar;
+    variants.add(copy.join(''));
+  }
+  return Array.from(variants).filter(v => ALL_MARKED.some(m => v.toLowerCase().includes(m)));
 }
 
 function pickDistractors(word, all, tier) {
