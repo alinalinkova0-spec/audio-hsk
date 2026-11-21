@@ -257,29 +257,77 @@ const filtered = getFilteredWords();
     return `<option value="${idx}" ${sel}>Урок ${idx + 1} (${from}–${to})</option>`;
   }).join('');
   const d = getDaily();
-  const tasks = Array.of(
-    { id: 'words', title: '1. Слова на слух', done: d.words || 0, goal: 12 },
-    { id: 'blitz', title: '2. Молния', done: d.blitz || 0, goal: 10 },
-    { id: 'phrases', title: '3. Фразы', done: d.phrases || 0, goal: 4 },
-    { id: 'stories', title: '4. Диалоги и тексты', done: d.stories || 0, goal: 2 }
+  const curMood = getTodayMood();
+  const curLvlNum = Number(selectedLevel) || 1;
+  const plan = getDynamicPlan();
+
+  const knownSet = new Set(
+    allWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).map(w => w.hanzi)
   );
-  const taskButtons = tasks.map(t => {
-    const isDone = t.done >= t.goal;
+  const knowsAll = wordsList => wordsList.every(w => knownSet.has(w));
+
+  const MOODS = Array.of(
+    {
+      id: 'high',
+      icon: '⚡',
+      ru: 'Готова изучать китайский язык!',
+      zh: '我准备好学习汉语了！',
+      py: 'Wǒ zhǔnbèi hǎo xuéxí Hànyǔ le!',
+      hideHelper: curLvlNum >= 2 || knowsAll(Array.of('我', '准备', '好', '学习', '汉语', '了'))
+    },
+    {
+      id: 'normal',
+      icon: '🙂',
+      ru: 'Могу уделить немного времени',
+      zh: '我能抽出一点儿时间',
+      py: 'Wǒ néng chōuchū yīdiǎnr shíjiān',
+      hideHelper: curLvlNum >= 4 || knowsAll(Array.of('我', '能', '抽出', '一点儿', '时间'))
+    },
+    {
+      id: 'tired',
+      icon: '😴',
+      ru: 'Готова умереть от усталости',
+      zh: '我累死了',
+      py: 'Wǒ lèi sǐ le',
+      hideHelper: curLvlNum >= 3 || knowsAll(Array.of('我', '累', '死', '了'))
+    }
+  );
+
+  const moodCardsHtml = MOODS.map(m => {
+    const active = curMood === m.id;
+    const textHtml = m.hideHelper
+      ? `<div style="font-size:18px;font-weight:700;color:var(--fg);">${m.icon} ${m.zh}</div>`
+      : `<div style="font-size:15px;font-weight:700;color:var(--fg);">${m.icon} ${m.ru}</div>
+         <div style="font-size:14px;color:var(--jade);font-weight:600;margin-top:2px;">${m.zh} <span style="font-weight:400;color:var(--muted);font-size:13px;">(${m.py})</span></div>`;
+    return `
+      <div style="display:flex;align-items:stretch;gap:6px;">
+        <button class="ans" data-mood="${m.id}" style="flex:1;text-align:left;padding:11px 13px;border-color:${active ? 'var(--accent)' : ''};background:${active ? '#FFF5F4' : ''};">
+          ${textHtml}
+        </button>
+        <button type="button" class="ghost" data-say-zh="${m.zh}" title="Послушать" style="padding:0 12px;font-size:16px;">🔊</button>
+      </div>`;
+  }).join('');
+
+  const taskButtons = plan.tasks.map(t => {
+    const doneCount = d[t.id] || 0;
+    const isDone = doneCount >= t.goal;
     const badge = isDone
-      ? `<span style="color:#4ade80;font-weight:700;font-size:18px;">✓ ${t.done}/${t.goal}</span>`
-      : `<span style="color:var(--muted);font-size:14px;">${t.done}/${t.goal}</span>`;
+      ? `<span style="color:#4ade80;font-weight:700;font-size:18px;">✓ ${doneCount}/${t.goal}</span>`
+      : `<span style="color:var(--muted);font-size:14px;">${doneCount}/${t.goal}</span>`;
     return `
       <button class="ans" data-mode="${t.id}" style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-size:16px;border-color:${isDone ? '#4ade80' : ''};">
         <span>${t.title}</span>
         ${badge}
       </button>`;
   }).join('');
+
   const hr = new Date().getHours();
   const gooseImg = (hr >= 6 && hr < 10)
     ? './goose_morning.jpg'
     : (hr >= 10 && hr < 21)
       ? './goose.jpg'
       : './goose_night.jpg';
+
   app.innerHTML = `
     <section class="hero">
       <h1>听 HSK 3.0 (1–4) — аудирование</h1>
@@ -293,18 +341,43 @@ const filtered = getFilteredWords();
         </select>
         <select id="lesSel">${lessonOptions}</select>
       </div>
-      <div style="width:100%;max-width:420px;margin:16px auto 0;display:flex;flex-direction:column;gap:10px;">
-     <div style="text-align:left;font-size:12px;color:var(--muted);padding:0 6px;line-height:1.35;">Для открытия следующего HSK нужно выучить 95% слов предыдущего уровня.</div>
-        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 6px;margin-top:2px;">
+
+      <div class="box" style="width:100%;max-width:420px;margin:14px auto 0;text-align:left;padding:12px;">
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">🦆 Как ты сегодня? Настроим план:</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          ${moodCardsHtml}
+        </div>
+      </div>
+
+      <div style="width:100%;max-width:420px;margin:14px auto 0;display:flex;flex-direction:column;gap:10px;">
+        <div style="text-align:left;font-size:12px;color:var(--jade);font-weight:600;padding:0 6px;">${plan.focusText}</div>
+        <div style="display:flex;justify-content:space-between;align-items:baseline;padding:0 6px;">
           <span style="font-size:14px;font-weight:600;color:var(--fg);">План на сегодня:</span>
           <span style="font-size:12px;color:var(--muted);">Сегодня / норма</span>
         </div>
-                ${taskButtons}
+        ${taskButtons}
       </div>
-   <div style="width:100%;max-width:260px;margin:6px auto 0;text-align:center;overflow:hidden;">
-     <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
-   </div>
+
+      <div style="width:100%;max-width:260px;margin:6px auto 0;text-align:center;overflow:hidden;">
+        <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
+      </div>
     </section>`;
+
+  app.querySelectorAll('[data-mood]').forEach(btn => {
+    btn.onclick = () => {
+      setTodayMood(btn.dataset.mood);
+      speak(btn.parentElement.querySelector('[data-say-zh]').dataset.sayZh, { rate: 0.95 });
+      home();
+    };
+  });
+
+  app.querySelectorAll('[data-say-zh]').forEach(btn => {
+    btn.onclick = e => {
+      e.stopPropagation();
+      speak(btn.dataset.sayZh, { rate: 0.95 });
+    };
+  });
+
   app.querySelector('#lvlSel').onchange = e => {
     selectedLevel = e.target.value;
     selectedLesson = 0;
@@ -318,6 +391,7 @@ const filtered = getFilteredWords();
     localStorage.setItem('hsk_les', String(selectedLesson));
     history.replaceState(null, '', '#/');
   };
+
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
       location.hash = '#/' + btn.dataset.mode;
