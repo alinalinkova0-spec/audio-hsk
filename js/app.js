@@ -293,24 +293,35 @@ const filtered = getFilteredWords();
     }
   );
 
-  const moodCardsHtml = MOODS.map(m => {
-    const active = curMood === m.id;
-    const textHtml = m.hideHelper
-      ? `<div style="font-size:18px;font-weight:700;color:var(--fg);">${m.icon} ${m.zh}</div>`
-      : `<div style="font-size:15px;font-weight:700;color:var(--fg);">${m.icon} ${m.ru}</div>
-         <div style="font-size:14px;color:var(--jade);font-weight:600;margin-top:2px;">${m.zh} <span style="font-weight:400;color:var(--muted);font-size:13px;">(${m.py})</span></div>`;
-    return `
-      <div style="display:flex;align-items:stretch;gap:6px;">
-        <button class="ans" data-mood="${m.id}" style="flex:1;text-align:left;padding:11px 13px;border-color:${active ? 'var(--accent)' : ''};background:${active ? '#FFF5F4' : ''};">
-          ${textHtml}
-        </button>
-        <button type="button" class="ghost" data-say-zh="${m.zh}" title="Послушать" style="padding:0 12px;font-size:16px;">🔊</button>
-      </div>`;
-  }).join('');
+  if (!curMood) {
+    const moodButtonsHtml = MOODS.map(m => {
+      const textHtml = m.hideHelper
+        ? `<div style="font-size:19px;font-weight:700;color:var(--fg);">${m.zh}</div>`
+        : `<div style="font-size:16px;font-weight:700;color:var(--fg);">${m.ru}</div>
+           <div style="font-size:14px;color:var(--jade);font-weight:600;margin-top:3px;">${m.zh} <span style="color:var(--muted);font-weight:400;">(${m.py})</span></div>`;
+      return `<button class="ans" data-mood="${m.id}" data-say-zh="${m.zh.trim()}" style="width:100%;text-align:center;padding:15px 14px;border-radius:14px;">${textHtml}</button>`;
+    }).join('');
 
-  const taskButtons = plan.tasks.map(t => {
-    const doneCount = d[t.id] || 0;
-    const isDone = doneCount >= t.goal;
+    app.innerHTML = `
+      <section class="hero" style="max-width:420px;margin:0 auto;padding:28px 16px;">
+        <h2 style="margin:0 0 14px;font-size:22px;text-align:center;">🦆 Какой ты сегодня?</h2>
+        <div class="box" style="margin:0;padding:12px;">
+          <div style="display:flex;flex-direction:column;gap:9px;">
+            ${moodButtonsHtml}
+          </div>
+        </div>
+      </section>`;
+
+    app.querySelectorAll('[data-mood]').forEach(btn => {
+      btn.onclick = () => {
+        setTodayMood(btn.dataset.mood);
+        speak(btn.dataset.sayZh, { rate: 0.95 });
+        home();
+      };
+    });
+    return;
+  }
+
     const badge = isDone
       ? `<span style="color:#4ade80;font-weight:700;font-size:18px;">✓ ${doneCount}/${t.goal}</span>`
       : `<span style="color:var(--muted);font-size:14px;">${doneCount}/${t.goal}</span>`;
@@ -351,12 +362,6 @@ const filtered = getFilteredWords();
         <select id="lesSel">${lessonOptions}</select>
       </div>
       ${levelUpBanner}
-      <div class="box" style="width:100%;max-width:420px;margin:14px auto 0;text-align:left;padding:12px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">🦆 Как ты сегодня? Настроим план:</div>
-        <div style="display:flex;flex-direction:column;gap:7px;">
-          ${moodCardsHtml}
-        </div>
-      </div>
 
       <div style="width:100%;max-width:420px;margin:14px auto 0;display:flex;flex-direction:column;gap:10px;">
         <div style="text-align:left;font-size:12px;color:var(--jade);font-weight:600;padding:0 6px;">${plan.focusText}</div>
@@ -371,21 +376,6 @@ const filtered = getFilteredWords();
         <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
       </div>
     </section>`;
-
-  app.querySelectorAll('[data-mood]').forEach(btn => {
-    btn.onclick = () => {
-      setTodayMood(btn.dataset.mood);
-      speak(btn.parentElement.querySelector('[data-say-zh]').dataset.sayZh, { rate: 0.95 });
-      home();
-    };
-  });
-
-  app.querySelectorAll('[data-say-zh]').forEach(btn => {
-    btn.onclick = e => {
-      e.stopPropagation();
-      speak(btn.dataset.sayZh, { rate: 0.95 });
-    };
-  });
 
   app.querySelector('#lvlSel').onchange = e => {
     selectedLevel = e.target.value;
