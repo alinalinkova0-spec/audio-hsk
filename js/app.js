@@ -2,7 +2,7 @@ import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=54';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=12';
-import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=6';
+import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=7';
 const VOCAB_KEY = 'hsk_vocab_v13';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
@@ -1284,25 +1284,14 @@ function settings() {
   const remOn = localStorage.getItem('hsk_rem_on') === '1';
   const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
   const sfxOn = localStorage.getItem('hsk_sfx_off') !== '1';
-  app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
-    <h2 style="margin-top:0;">Настройки</h2>
-    <div class="box">
-      <h3 style="margin-top:0;font-size:16px;">🎵 Звук ответов</h3>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;">
-          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;">
-          Нефритовый отклик
-        </label>
-        <div style="display:flex;gap:6px;">
-          <button id="testSfxOk" class="ghost" style="font-size:13px;padding:6px 10px;">✓ Верно</button>
-          <button id="testSfxBad" class="ghost" style="font-size:13px;padding:6px 10px;">✕ Ошибка</button>
-        </div>
-      </div>
-    </div>
+  const sfxTheme = localStorage.getItem('hsk_sfx_theme') || 'jade';
 
-<div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;">🎯 Мой уровень HSK</h3>
-      <p style="color:var(--muted);font-size:13px;">Переключись на другой уровень или пройди входной тест заново:</p>
+  app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
+    <h2 style="margin-top:0;text-align:center;">Настройки</h2>
+
+    <div class="box">
+      <h3 style="margin-top:0;font-size:16px;text-align:center;">Мой уровень HSK</h3>
+      <p style="color:var(--muted);font-size:13px;text-align:center;">Переключись на другой уровень или пройди входной тест заново:</p>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">
         <button data-set-lvl="1" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '1' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 1</button>
         <button data-set-lvl="2" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '2' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 2</button>
@@ -1310,16 +1299,36 @@ function settings() {
         <button data-set-lvl="4" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '4' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 4</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <a href="#/placement" class="ghost" style="flex:1;text-align:center;font-size:13px;">🔄 Входной тест заново</a>
-        <button id="resetMoodBtn" class="ghost" style="flex:1;font-size:13px;">🦆 Сменить настроение</button>
+        <a href="#/placement" class="ghost" style="flex:1;text-align:center;font-size:13px;">Входной тест заново</a>
+        <button id="resetMoodBtn" class="ghost" style="flex:1;font-size:13px;">Сменить настроение</button>
       </div>
-      <p id="lvlSwitchStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
+      <p id="lvlSwitchStatus" style="margin-top:8px;font-size:13px;color:var(--jade);text-align:center;"></p>
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;">🔔 Ежедневная напоминалка</h3>
-      <p style="color:var(--muted);font-size:13px;">Напомнит о занятиях, если план на сегодня ещё не выполнен. На iPhone предварительно добавь сайт на экран <b>«Домой»</b>.</p>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+      <h3 style="margin-top:0;font-size:16px;text-align:center;">Звук ответов</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;">
+          Включить звук
+        </label>
+        <div style="display:flex;gap:6px;">
+          <button id="testSfxOk" class="ghost" style="font-size:13px;padding:6px 10px;">Верно</button>
+          <button id="testSfxBad" class="ghost" style="font-size:13px;padding:6px 10px;">Ошибка</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
+        <button data-sfx-theme="jade" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'jade' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Нефритовый</button>
+        <button data-sfx-theme="guzheng" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'guzheng' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Гучжэн</button>
+        <button data-sfx-theme="guqin" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'guqin' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Гуцинь</button>
+        <button data-sfx-theme="dizi" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'dizi' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Флейта дицзы</button>
+      </div>
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <h3 style="margin-top:0;font-size:16px;text-align:center;">Ежедневная напоминалка</h3>
+      <p style="color:var(--muted);font-size:13px;text-align:center;">Напомнит о занятиях, если план на сегодня ещё не выполнен.</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
         <label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;cursor:pointer;">
           <input type="checkbox" id="remToggle" ${remOn ? 'checked' : ''} style="width:18px;height:18px;">
           Включить
@@ -1327,13 +1336,21 @@ function settings() {
         <input type="time" id="remTime" value="${remTime}" style="padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;">
         <button id="testNotify" class="ghost" style="font-size:13px;padding:6px 10px;">Проверить</button>
       </div>
-      <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
+      <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);text-align:center;"></p>
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;">💬 Поддержка</h3>
-      <p style="color:var(--muted);font-size:13px;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
-      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:8px;display:block;text-align:center;font-size:14px;">✈️ Написать в поддержку (@alinaLinka20)</a>
+      <h3 style="margin-top:0;font-size:16px;text-align:center;">Как добавить на главный экран</h3>
+      <div style="font-size:13px;color:var(--muted);line-height:1.55;">
+        <p style="margin:0 0 6px;"><b>iPhone (Safari):</b> нажми кнопку <b>«Поделиться»</b> (квадрат со стрелкой вверх внизу экрана) → выбери <b>«На экран „Домой“»</b> → нажми <b>«Добавить»</b>.</p>
+        <p style="margin:0;"><b>Android (Chrome):</b> нажми <b>три точки</b> в правом верхнем углу → выбери <b>«Добавить на гл. экран»</b> или <b>«Установить приложение»</b>.</p>
+      </div>
+    </div>
+
+    <div class="box" style="margin-top:14px;">
+      <h3 style="margin-top:0;font-size:16px;text-align:center;">Поддержка</h3>
+      <p style="color:var(--muted);font-size:13px;text-align:center;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
+      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:8px;display:block;text-align:center;font-size:14px;">Написать в поддержку (@alinaLinka20)</a>
     </div>
   </section>`;
 
@@ -1356,11 +1373,34 @@ function settings() {
     location.hash = '#/';
   };
 
+  app.querySelector('#sfxToggle').onchange = e => {
+    localStorage.setItem('hsk_sfx_off', e.target.checked ? '0' : '1');
+    if (e.target.checked) playFeedback(true);
+  };
+  app.querySelector('#testSfxOk').onclick = () => playFeedback(true);
+  app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
+
+  app.querySelectorAll('[data-sfx-theme]').forEach(btn => {
+    btn.onclick = () => {
+      const th = btn.dataset.sfxTheme;
+      localStorage.setItem('hsk_sfx_theme', th);
+      localStorage.setItem('hsk_sfx_off', '0');
+      app.querySelector('#sfxToggle').checked = true;
+      app.querySelectorAll('[data-sfx-theme]').forEach(x => {
+        const active = x.dataset.sfxTheme === th;
+        x.style.borderColor = active ? 'var(--jade)' : '';
+        x.style.background = active ? '#EDF5F0' : '';
+        x.style.fontWeight = active ? '700' : '500';
+      });
+      playFeedback(true);
+    };
+  });
+
   const remStatus = app.querySelector('#remStatus');
   app.querySelector('#remToggle').onchange = async e => {
     if (e.target.checked) {
       if (!('Notification' in window)) {
-        remStatus.textContent = 'Браузер не поддерживает уведомления (на iPhone добавь сайт на экран «Домой»).';
+        remStatus.textContent = 'Браузер не поддерживает уведомления (добавь сайт на экран «Домой»).';
         e.target.checked = false;
         return;
       }
@@ -1384,12 +1424,6 @@ function settings() {
       remStatus.textContent = 'Время напоминания обновлено: ' + e.target.value;
     }
   };
-  app.querySelector('#sfxToggle').onchange = e => {
-    localStorage.setItem('hsk_sfx_off', e.target.checked ? '0' : '1');
-    if (e.target.checked) playFeedback(true);
-  };
-  app.querySelector('#testSfxOk').onclick = () => playFeedback(true);
-  app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
 
   app.querySelector('#testNotify').onclick = async () => {
     if (!('Notification' in window)) {
@@ -1398,7 +1432,7 @@ function settings() {
     }
     const perm = await Notification.requestPermission();
     if (perm === 'granted') {
-      new Notification('听 HSK 1–4 🦆', {
+      new Notification('HSK 3.0 听力训练', {
         body: 'Пора размять слух! Загляни выполнить план на сегодня.',
         icon: './goose.jpg'
       });
