@@ -1,5 +1,6 @@
-import { speak, speakDialog } from '../audio.js?v=4';
+import { speak, speakDialog, mountAudioControl } from '../audio.js?v=5';
 import { review, saveSRS } from '../srs.js';
+
 function makeClickableHanzi(text) {
   const words = window.__ALL_WORDS || [];
   if (!words.length) return text;
@@ -53,6 +54,7 @@ function bindHanziTaps(container) {
     };
   });
 }
+
 export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
   const distractors = allSentences
     .filter(x => x.id !== s.id)
@@ -60,24 +62,9 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
     .slice(0, 3);
   const options = Array.of(s, ...distractors).sort(() => Math.random() - 0.5);
 
-  const MODES = Array.of(
-    { rate: 1.0, label: 'Обычно' },
-    { rate: 0.75, label: 'Помедленнее' }
-  );
-  let rate = Number(localStorage.getItem('hsk_phrase_speed'));
-  if (rate !== 1.0 && rate !== 0.75) rate = 1.0;
-
   root.innerHTML = `
     <div class="card">
-      <div class="card-audio" style="flex-direction:row;align-items:center;justify-content:center;gap:18px;">
-        <button id="play" class="big-play" aria-label="Прослушать" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
-        </button>
-        <div id="phraseSpeedWrap" style="position:relative;display:inline-flex;flex-direction:column;align-items:center;background:#EFE8D8;border:1.5px solid var(--border);border-radius:20px;padding:4px;user-select:none;cursor:pointer;">
-          <div id="phraseSpeedThumb" style="position:absolute;left:4px;right:4px;top:4px;height:36px;background:var(--accent);border-radius:15px;transition:transform 0.2s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(200,62,55,0.28);"></div>
-          ${MODES.map(m => `<button type="button" data-rate="${m.rate}" style="position:relative;z-index:1;width:118px;height:36px;padding:0 8px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:color 0.2s;color:${m.rate === rate ? '#FFFDF9' : 'var(--fg)'};">${m.label}</button>`).join('')}
-        </div>
-      </div>
+      <div id="phraseAudioBox" class="card-audio"></div>
       <p class="prompt">Прослушай фразу и выбери перевод</p>
       <div id="answers" class="answers" style="grid-template-columns:1fr;"></div>
       <div id="reveal" class="reveal" hidden>
@@ -94,26 +81,13 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
 
   const answerEl = root.querySelector('#answers');
   const reveal = root.querySelector('#reveal');
-  const speedWrap = root.querySelector('#phraseSpeedWrap');
-  const speedThumb = root.querySelector('#phraseSpeedThumb');
-  const speedBtns = Array.from(speedWrap.querySelectorAll('button[data-rate]'));
   let done = false;
 
-  function setRate(newRate, shouldSpeak = true) {
-    rate = newRate;
-    localStorage.setItem('hsk_phrase_speed', String(rate));
-    const idx = MODES.findIndex(m => m.rate === rate);
-    speedThumb.style.transform = `translateY(${Math.max(0, idx) * 36}px)`;
-    speedBtns.forEach(b => {
-      b.style.color = Number(b.dataset.rate) === rate ? '#FFFDF9' : 'var(--fg)';
-    });
-    if (shouldSpeak) speak(s.hanzi, { rate });
-  }
-
-  setRate(rate, false);
-  speedBtns.forEach(b => {
-    b.onclick = () => setRate(Number(b.dataset.rate), true);
-  });
+  const audioCtrl = mountAudioControl(
+    root.querySelector('#phraseAudioBox'),
+    r => speak(s.hanzi, { rate: r }),
+    { autoPlay: true }
+  );
 
   options.forEach(o => {
     const btn = document.createElement('button');
@@ -125,9 +99,6 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
     answerEl.appendChild(btn);
   });
 
-  root.querySelector('#play').onclick = () => speak(s.hanzi, { rate });
-  speak(s.hanzi, { rate });
-
   function choose(o, btn) {
     if (done) return;
     done = true;
@@ -137,9 +108,9 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
       if (b.textContent === s.ru) b.classList.add('ok');
     });
 
-    speak(s.hanzi, { rate });
+    audioCtrl.replay();
 
-       reveal.hidden = false;
+    reveal.hidden = false;
     const phraseBox = reveal.querySelector('#phraseText');
     phraseBox.innerHTML = `
       <div>${makeClickableHanzi(s.hanzi)}</div>
@@ -148,7 +119,7 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
       <div style="font-size:12px;color:var(--muted);margin-top:6px;">💡 Нажми на подчёркнутое слово, чтобы послушать отдельно</div>
     `;
     bindHanziTaps(phraseBox);
-    reveal.querySelector('#again').onclick = () => speak(s.hanzi, { rate });
+    reveal.querySelector('#again').onclick = () => audioCtrl.replay();
     reveal.querySelectorAll('[data-grade]').forEach(g => {
       g.onclick = () => {
         review(srsState, s.id, +g.dataset.grade);
@@ -162,8 +133,6 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
   const userLvl = Number(localStorage.getItem('hsk_lvl') || localStorage.getItem('hsk_start_lvl') || 1);
   let curKind = localStorage.getItem('hsk_story_kind') || 'all';
   if (!Array.of('all', 'dialogue', 'text').includes(curKind)) curKind = 'all';
-  let rate = Number(localStorage.getItem('hsk_phrase_speed'));
-  if (rate !== 1.0 && rate !== 0.75) rate = 1.0;
 
   function render() {
     let lvlPool = storiesList.filter(x => {
@@ -177,11 +146,6 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
 
     const item = pool.at(Math.floor(Math.random() * pool.length));
 
-    const MODES = Array.of(
-      { rate: 1.0, label: 'Обычно' },
-      { rate: 0.75, label: 'Помедленнее' }
-    );
-
     root.innerHTML = `
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:12px;">
@@ -193,15 +157,7 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
           </select>
         </div>
 
-        <div class="card-audio" style="flex-direction:row;align-items:center;justify-content:center;gap:18px;">
-          <button id="play" class="big-play" aria-label="Прослушать" style="width:92px;height:92px;display:flex;align-items:center;justify-content:center;padding:0;">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-          <div id="storySpeedWrap" style="position:relative;display:inline-flex;flex-direction:column;align-items:center;background:#EFE8D8;border:1.5px solid var(--border);border-radius:20px;padding:4px;user-select:none;cursor:pointer;">
-            <div id="storySpeedThumb" style="position:absolute;left:4px;right:4px;top:4px;height:36px;background:var(--accent);border-radius:15px;transition:transform 0.2s cubic-bezier(.4,0,.2,1);box-shadow:0 2px 6px rgba(200,62,55,0.28);"></div>
-            ${MODES.map(m => `<button type="button" data-rate="${m.rate}" style="position:relative;z-index:1;width:118px;height:36px;padding:0 8px;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:color 0.2s;color:${m.rate === rate ? '#FFFDF9' : 'var(--fg)'};">${m.label}</button>`).join('')}
-          </div>
-        </div>
+        <div id="storyAudioBox" class="card-audio"></div>
 
         <p class="prompt" style="font-weight:700;font-size:17px;margin-top:14px;">${item.question}</p>
         <div id="answers" class="answers" style="grid-template-columns:1fr;"></div>
@@ -214,39 +170,20 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
         </div>
       </div>`;
 
-    const playAudio = () => {
-      const payload = item.lines.map(l => ({ speaker: l.speaker, text: l.hanzi }));
-      speakDialog(payload, { rate });
-    };
+    const audioCtrl = mountAudioControl(
+      root.querySelector('#storyAudioBox'),
+      r => {
+        const payload = item.lines.map(l => ({ speaker: l.speaker, text: l.hanzi }));
+        speakDialog(payload, { rate: r });
+      },
+      { autoPlay: true }
+    );
 
     root.querySelector('#storyKind').onchange = e => {
       curKind = e.target.value;
       localStorage.setItem('hsk_story_kind', curKind);
       render();
     };
-
-    const speedWrap = root.querySelector('#storySpeedWrap');
-    const speedThumb = root.querySelector('#storySpeedThumb');
-    const speedBtns = Array.from(speedWrap.querySelectorAll('button[data-rate]'));
-
-    function setRate(newRate, shouldSpeak = true) {
-      rate = newRate;
-      localStorage.setItem('hsk_phrase_speed', String(rate));
-      const idx = MODES.findIndex(m => m.rate === rate);
-      speedThumb.style.transform = `translateY(${Math.max(0, idx) * 36}px)`;
-      speedBtns.forEach(b => {
-        b.style.color = Number(b.dataset.rate) === rate ? '#FFFDF9' : 'var(--fg)';
-      });
-      if (shouldSpeak) playAudio();
-    }
-
-    setRate(rate, false);
-    speedBtns.forEach(b => {
-      b.onclick = () => setRate(Number(b.dataset.rate), true);
-    });
-
-    root.querySelector('#play').onclick = playAudio;
-    playAudio();
 
     const answerEl = root.querySelector('#answers');
     const reveal = root.querySelector('#reveal');
@@ -287,7 +224,7 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
         `;
         bindHanziTaps(transcriptBox);
 
-        reveal.querySelector('#again').onclick = playAudio;
+        reveal.querySelector('#again').onclick = () => audioCtrl.replay();
         reveal.querySelector('#nextStory').onclick = onDone;
       };
       answerEl.appendChild(btn);
@@ -296,4 +233,3 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
 
   render();
 }
-
