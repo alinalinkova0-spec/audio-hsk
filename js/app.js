@@ -318,11 +318,22 @@ const filtered = getFilteredWords();
         </div>
       </section>`;
 
+     let moodLocked = false;
     app.querySelectorAll('[data-mood]').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
+        if (moodLocked) return;
+        moodLocked = true;
         setTodayMood(btn.dataset.mood);
-        speak(btn.dataset.sayZh, { rate: 0.95 });
-        home();
+        btn.classList.add('ok');
+        btn.style.borderColor = 'var(--jade)';
+        btn.style.background = '#EDF5F0';
+        const playRes = speak(btn.dataset.sayZh, { rate: 0.95 });
+        if (playRes && typeof playRes.then === 'function') {
+          await playRes;
+        } else {
+          await new Promise(r => setTimeout(r, 2200));
+        }
+        setTimeout(() => home(), 1000);
       };
     });
     return;
