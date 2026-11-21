@@ -1,4 +1,4 @@
-import { speak } from '../audio.js?v=2';
+import { speak } from '../audio.js?v=4';
 import { review, saveSRS } from '../srs.js';
 
 function stripTones(p) {
