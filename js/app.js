@@ -307,7 +307,7 @@ const filtered = getFilteredWords();
 
     app.innerHTML = `
       <section class="hero" style="max-width:420px;margin:0 auto;padding:28px 16px;">
-        <h2 style="margin:0 0 14px;font-size:22px;text-align:center;">🦆 Какой ты сегодня?</h2>
+        <h2 style="margin:0 0 14px;font-size:22px;text-align:center;"> Какой ты сегодня?</h2>
         <div class="box" style="margin:0;padding:12px;">
           <div style="display:flex;flex-direction:column;gap:9px;">
             ${moodButtonsHtml}
