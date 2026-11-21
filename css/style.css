@@ -40,7 +40,7 @@ body {
 
 .logo {
   font-weight: 700;
-  font-size: 18px;
+font-size: 16px;
   text-decoration: none;
   color: var(--accent);
   display: flex;
@@ -51,9 +51,9 @@ body {
 nav a {
   color: var(--muted);
   text-decoration: none;
-  margin-left: 18px;
+margin-left: 11px;
   font-weight: 500;
-  font-size: 15px;
+font-size: 14px;
   transition: color 0.15s;
 }
 
