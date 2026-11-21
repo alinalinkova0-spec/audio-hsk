@@ -209,7 +209,7 @@ function home() {
           <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
         </div>
         <div style="margin-top:6px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
-          <div style="margin-bottom:2px;">💡 <b>Этот сайт можно добавить на главный экран телефона для быстрого доступа:</b></div>
+        <div style="margin-bottom:4px;">💡 <b>Этот сайт можно добавить<br>на главный экран телефона<br>для быстрого доступа:</b></div>
           <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
           <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
         </div>
