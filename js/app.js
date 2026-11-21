@@ -197,40 +197,50 @@ function home() {
       : './goose_night.jpg';
   app.innerHTML = `
     <section class="hero">
-          <!-- PREVIEW START -->
-      <div class="box" style="margin-bottom:20px;border:2px dashed var(--accent);background:#FFFDF9;">
-        <div style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;margin-bottom:10px;">
-          👀 Предпросмотр всех новых экранов (временный блок)
+ 
+      <!-- PREVIEW START -->
+      <div id="previewBox" class="box" style="margin-bottom:20px;border:2px dashed var(--accent);background:#FFFDF9;cursor:pointer;user-select:none;" title="Нажми на картинку, чтобы переключить">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:10px;">
+          <span id="prevTitle">1/4 • Первый вход</span>
+          <span style="color:var(--muted);font-weight:500;">👆 Нажми на картинку</span>
         </div>
 
-        <div style="padding:10px 0;border-bottom:1px solid var(--border);">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">1. Первый вход (приветствие):</div>
-          <div style="width:100%;max-width:180px;margin:0 auto;">
+        <div id="prevSlide0">
+          <div style="width:100%;max-width:210px;margin:0 auto;">
             <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
           </div>
+          <div style="margin-top:8px;font-weight:700;font-size:16px;">Привет! 👋 Сделай 2 быстрых шага</div>
         </div>
 
-        <div style="padding:12px 0;border-bottom:1px solid var(--border);">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">2. План на сегодня выполнен (гифка):</div>
-          <div style="width:100%;max-width:220px;margin:0 auto;">
+        <div id="prevSlide1" style="display:none;">
+          <div style="width:100%;max-width:240px;margin:0 auto;">
             <img src="./goose_plan_done.gif" alt="План на сегодня выполнен" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
           </div>
-          <div style="margin-top:8px;color:var(--jade);font-weight:800;font-size:18px;">План на сегодня выполнен!!! 🎉</div>
+          <div style="margin-top:8px;color:var(--jade);font-weight:800;font-size:20px;">План на сегодня выполнен!!! 🎉</div>
         </div>
 
-        <div style="padding:12px 0 4px;">
-          <div style="font-size:12px;color:var(--muted);margin-bottom:6px;">3. Пройдены все 4 уровня HSK (финал + хвост коровы):</div>
+        <div id="prevSlide2" style="display:none;">
           <div style="position:relative;width:100%;max-width:300px;margin:0 auto;">
+            <img src="./goose_win.jpg" alt="Уровень пройден" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
+            <div style="position:absolute;left:46%;right:0;top:28%;text-align:center;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;line-height:1.3;color:var(--jade);">
+              <div>УСПЕШНО ПРОЙДЕН</div>
+              <div style="color:var(--accent);font-size:19px;margin-top:2px;">HSK 1 🎉</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="prevSlide3" style="display:none;">
+          <div style="position:relative;width:100%;max-width:320px;margin:0 auto;">
             <img src="./goose_all_done.jpg" alt="Все уровни пройдены" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;">
-            <div style="position:absolute;left:32%;top:6%;width:38%;height:19%;background:#FBF7EF;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 8px;font-family:'Inter',sans-serif;font-weight:800;font-size:12px;line-height:1.25;color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid #F4C430;">
-              Молодец!<br>Всё пройдено! 🎉
+            <div style="position:absolute;left:32%;top:6%;width:38%;height:19%;background:#FBF7EF;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 8px;font-family:'Inter',sans-serif;font-weight:800;font-size:14px;color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid #F4C430;">
+              Поздравляем! 🎉
             </div>
             <svg viewBox="0 0 100 100" style="position:absolute;right:0;bottom:23%;width:14%;height:14%;pointer-events:none;">
               <path d="M 0 38 Q 22 48 34 66" fill="none" stroke="#181818" stroke-width="6" stroke-linecap="round"/>
               <path d="M 32 62 C 44 64 52 74 46 84 C 38 88 28 80 30 68 Z" fill="#181818"/>
             </svg>
           </div>
-          <div style="margin-top:10px;color:var(--jade);font-weight:800;font-size:18px;">Поздравляю! 🎉</div>
+          <div style="margin-top:10px;color:var(--jade);font-weight:800;font-size:19px;">Поздравляю! 🎉</div>
           <p style="font-size:13px;line-height:1.45;color:var(--fg);margin:6px 0 0;">
             Этот сайт больше ничему не сможет тебя научить! Желаю удачи в изучении китайского языка! Я тобой горжусь! 🦆❤️
           </p>
