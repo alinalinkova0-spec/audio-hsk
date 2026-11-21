@@ -45,6 +45,9 @@ function getTodayMood() {
 
 function setTodayMood(mood) {
   localStorage.setItem(getTodayMoodKey(), mood);
+  const prev = Number(localStorage.getItem('hsk_tired_streak') || '0');
+  const next = mood === 'tired' ? prev + 1 : 0;
+  localStorage.setItem('hsk_tired_streak', String(next));
 }
 
 function getMainWeakness() {
@@ -91,14 +94,18 @@ function getDynamicPlan() {
   }
 
   if (mood === 'tired') {
+    const tiredDays = Number(localStorage.getItem('hsk_tired_streak') || '1');
+    const stepUp = tiredDays >= 3;
     const thirdTask = dayNum % 2 === 0
       ? { id: 'stories', title: '3. Лёгкие диалоги', goal: 2 }
-      : { id: 'phrases', title: '3. Короткие фразы', goal: 3 };
+      : { id: 'phrases', title: '3. Короткие фразы', goal: stepUp ? 4 : 3 };
     return {
-      focusText: '😴 Антистресс-режим: закрепляем знакомое без перегруза',
+      focusText: stepUp
+        ? '🌱 Антистресс-режим (3+ дн. подряд — мягко держим темп)'
+        : '🥱 Антистресс-режим: закрепляем знакомое без перегруза',
       tasks: Array.of(
-        { id: 'words', title: '1. Слова на слух (повторение)', goal: 10 },
-        { id: 'blitz', title: '2. Молния', goal: 8 },
+        { id: 'words', title: '1. Слова на слух (повторение)', goal: stepUp ? 12 : 10 },
+        { id: 'blitz', title: '2. Молния', goal: stepUp ? 10 : 8 },
         thirdTask
       )
     };
