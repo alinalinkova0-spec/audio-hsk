@@ -115,8 +115,8 @@ function getLevelProgress(lvl) {
   const known = lvlWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
   return Math.round((known / lvlWords.length) * 100);
 }
-function home() {
-  if (allWords.length <= 25) {
+  const userStartLvl = Number(localStorage.getItem('hsk_start_lvl') || 0);
+  if (allWords.length <= 25 || !userStartLvl) {
     app.innerHTML = `
       <section class="hero" style="max-width:420px;margin:0 auto;padding:20px 16px;">
         <h1>Привет! 👋</h1>
@@ -124,21 +124,47 @@ function home() {
           Это тренажёр аудирования по новому <b>HSK 3.0 (1–4 уровни)</b>.
         </p>
         <p style="font-size:15px;line-height:1.45;color:var(--fg);margin:0 0 12px;">
-          Чтобы всё заработало (и открывалось даже без интернета), сделай 2 шага:
+          Выбери свой текущий уровень — я сразу загружу нужные слова в память для работы без интернета:
         </p>
-        <div class="box" style="text-align:left;margin:12px 0;font-size:14px;line-height:1.6;">
-          <div><b>1. Скачай словарь:</b> перейди в <b>«Статистику»</b> (кнопка ниже) и обязательно загрузи базу слов. Там же по желанию можно настроить напоминания.</div>
-          <div style="margin-top:8px;"><b>2. Добавь сайт на экран «Домой»</b> — для быстрого входа и работы уведомлений:</div>
-          <ul style="margin:4px 0 0 18px;padding:0;line-height:1.55;">
+        <div class="box" style="text-align:left;margin:12px 0;display:flex;flex-direction:column;gap:8px;">
+          <div style="font-weight:700;font-size:15px;margin-bottom:2px;">Мой уровень:</div>
+          <button class="ans" data-pick-lvl="1" style="padding:12px 14px;font-size:15px;text-align:left;">🌱 <b>HSK 1</b> — начинаю с нуля</button>
+          <button class="ans" data-pick-lvl="2" style="padding:12px 14px;font-size:15px;text-align:left;">🌿 <b>HSK 2</b> — знаю базовые слова</button>
+          <button class="ans" data-pick-lvl="3" style="padding:12px 14px;font-size:15px;text-align:left;">🌳 <b>HSK 3</b> — уверенно общаюсь</button>
+          <button class="ans" data-pick-lvl="4" style="padding:12px 14px;font-size:15px;text-align:left;">🐉 <b>HSK 4</b> — продвинутый уровень</button>
+          <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:4px;">🎯 Я не знаю (пройти тест)</button>
+        </div>
+        <p id="welcomeLoadStatus" style="font-size:14px;color:var(--accent);font-weight:600;min-height:20px;"></p>
+        <div class="box" style="text-align:left;margin:10px 0;font-size:13px;line-height:1.55;color:var(--muted);">
+          <div>💡 Для быстрого входа и уведомлений добавь сайт на экран <b>«Домой»</b>:</div>
+          <ul style="margin:4px 0 0 18px;padding:0;">
             <li><b>iPhone:</b> «Поделиться» → <b>«На экран Домой»</b></li>
-            <li><b>Android:</b> «⋮» (меню) → <b>«Добавить на гл. экран»</b></li>
+            <li><b>Android:</b> «⋮» → <b>«Добавить на гл. экран»</b></li>
           </ul>
         </div>
-        <a href="#/stats" class="cta" style="display:inline-block;width:100%;text-align:center;">Перейти в Статистику →</a>
-        <div style="width:100%;max-width:210px;margin:14px auto 0;text-align:center;">
+        <div style="width:100%;max-width:190px;margin:10px auto 0;text-align:center;">
           <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
         </div>
       </section>`;
+
+    app.querySelectorAll('[data-pick-lvl]').forEach(btn => {
+      btn.onclick = async () => {
+        const picked = Number(btn.dataset.pickLvl);
+        const st = app.querySelector('#welcomeLoadStatus');
+        app.querySelectorAll('button').forEach(b => (b.disabled = true));
+        await downloadLevelsUpTo(picked, st);
+        localStorage.setItem('hsk_start_lvl', String(picked));
+        selectedLevel = String(picked);
+        selectedLesson = 0;
+        localStorage.setItem('hsk_lvl', selectedLevel);
+        localStorage.setItem('hsk_les', '0');
+        home();
+      };
+    });
+
+    app.querySelector('#startPlacementBtn').onclick = () => {
+      location.hash = '#/placement';
+    };
     return;
   }
 
@@ -147,16 +173,15 @@ function home() {
   const p3 = getLevelProgress(3);
   const p4 = getLevelProgress(4);
 
-  const unlocked2 = p1 >= 95;
-  const unlocked3 = unlocked2 && p2 >= 95;
-  const unlocked4 = unlocked3 && p3 >= 95;
+  const unlocked2 = p1 >= 95 || userStartLvl >= 2;
+  const unlocked3 = (unlocked2 && p2 >= 95) || userStartLvl >= 3;
+  const unlocked4 = (unlocked3 && p3 >= 95) || userStartLvl >= 4;
 
   if (selectedLevel === 'all' || (selectedLevel === '2' && !unlocked2) || (selectedLevel === '3' && !unlocked3) || (selectedLevel === '4' && !unlocked4)) {
-    selectedLevel = '1';
-    localStorage.setItem('hsk_lvl', '1');
+    selectedLevel = String(userStartLvl || 1);
+    localStorage.setItem('hsk_lvl', selectedLevel);
   }
 
-  const filtered = getFilteredWords();
   const lessonCount = Math.max(1, Math.ceil(filtered.length / 50));
   if (selectedLesson >= lessonCount) selectedLesson = 0;
 
@@ -432,6 +457,109 @@ function startMode(mode) {
     else renderPhraseChoice(app, st.sentence, sentences, srs, next);
   }
   next();
+}
+async function downloadLevelsUpTo(maxLvl, stEl) {
+  const levels = Array.from({ length: maxLvl }, (_, idx) => idx + 1);
+  if (stEl) stEl.textContent = `Загрузка словаря HSK 1–${maxLvl}...`;
+  const host = 'raw.' + 'github' + 'usercontent.com';
+  const ruUrl = 'https://' + host + '/LiudmilaLV/json_hsk/master/hsk.json';
+  const [resNew, resRu] = await Promise.all([
+    fetch('./hsk.json?v=' + Date.now()),
+    fetch(ruUrl).catch(() => null)
+  ]);
+  if (!resNew.ok) throw new Error('HTTP ' + resNew.status);
+  const raw = await resNew.json();
+
+  const shortRu = str => {
+    const firstMeaning = String(str || '')
+      .split(/[,;/(]/)
+      .map(s => s.trim())
+      .find(Boolean) || '';
+    return firstMeaning.split(/\s+/).slice(0, 2).join(' ');
+  };
+
+  const ruMap = new Map();
+  if (resRu && resRu.ok) {
+    const ruList = await resRu.json();
+    ruList.forEach(w => {
+      if (w.hanzi && w.translations && Array.isArray(w.translations.rus)) {
+        ruMap.set(w.hanzi, {
+          ru: shortRu(w.translations.rus.at(0)),
+          pinyin: w.pinyin || ''
+        });
+      }
+    });
+  }
+
+  const parsed = [];
+  const needTranslate = [];
+
+  for (const item of raw) {
+    if (item.hanzi && item.level) {
+      const hanzi = String(item.hanzi).trim();
+      const newLvl = Number(item.level);
+      if (!hanzi || !levels.includes(newLvl)) continue;
+      const found = ruMap.get(hanzi);
+      const pinyin = String(item.pinyin || (found && found.pinyin) || '').trim();
+      if (found && found.ru && /[а-яё]/i.test(found.ru)) {
+        parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru: found.ru, level: newLvl });
+      } else {
+        const en = String(item.ru || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
+        if (en) needTranslate.push({ hanzi, pinyin, en, level: newLvl });
+      }
+      continue;
+    }
+
+    const lvls = item.l || item.level || Array.of();
+    const newLvl = levels.find(n => lvls.includes('n' + n));
+    if (!newLvl) continue;
+    const forms = item.f || item.forms || Array.of();
+    const form = forms.at(0) || {};
+    const hanzi = item.s || item.simplified;
+    if (!hanzi) continue;
+
+    const found = ruMap.get(hanzi);
+    const rawI = Array.isArray(form.i) ? form.i.at(0) : form.i;
+    const pinyin =
+      (typeof rawI === 'string' ? rawI : (rawI && (rawI.y || rawI.pinyin || rawI.p))) ||
+      form.p ||
+      (found && found.pinyin) ||
+      '';
+
+    if (found && found.ru && /[а-яё]/i.test(found.ru)) {
+      parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi, pinyin, ru: found.ru, level: newLvl });
+    } else {
+      const meanings = form.m || form.meanings || Array.of();
+      const en = String(meanings.at(0) || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
+      if (en) needTranslate.push({ hanzi, pinyin, en, level: newLvl });
+    }
+  }
+
+  const BATCH = 40;
+  for (let i = 0; i < needTranslate.length; i += BATCH) {
+    const chunk = needTranslate.slice(i, i + BATCH);
+    if (stEl) stEl.textContent = `Подготовка слов HSK 1–${maxLvl}: ${parsed.length} / ${parsed.length + needTranslate.length}...`;
+    try {
+      const q = encodeURIComponent(chunk.map(x => x.en).join('\n'));
+      const trHost = 'translate.' + 'google' + 'apis.com';
+      const trRes = await fetch(`https://${trHost}/translate_a/single?client=gtx&sl=en&tl=ru&dt=t&q=${q}`);
+      if (trRes.ok) {
+        const trData = await trRes.json();
+        const fullText = (trData.at(0) || []).map(part => part.at(0)).join('');
+        const lines = fullText.split('\n');
+        chunk.forEach((item, idx) => {
+          const ru = shortRu(lines[idx]);
+          if (ru && /[а-яё]/i.test(ru)) {
+            parsed.push({ id: 'hsk_' + (parsed.length + 1), hanzi: item.hanzi, pinyin: item.pinyin, ru, level: item.level });
+          }
+        });
+      }
+    } catch {}
+  }
+
+  saveVocab(parsed);
+  if (stEl) stEl.textContent = `Готово! Загружено ${parsed.length} слов (HSK 1–${maxLvl}).`;
+  return parsed;
 }
 
 function stats() {
