@@ -2,7 +2,7 @@ import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=54';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=12';
-import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=7';
+import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=8';
 const VOCAB_KEY = 'hsk_vocab_v13';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
@@ -1139,7 +1139,7 @@ function stats() {
   let dictQuery = '';
 
   app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
-    <h2 style="margin-top:0;">Словарь и прогресс</h2>
+    <h2 style="margin-top:0;text-align:center;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;">СЛОВАРЬ И ПРОГРЕСС</h2>
     <div class="box" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;padding:12px;">
       <div>
         <div style="font-size:20px;font-weight:700;color:var(--fg);">${allWords.length}</div>
@@ -1165,7 +1165,7 @@ function stats() {
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;">Офлайн-база слов</h3>
+    <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ОФЛАЙН-БАЗА СЛОВ</h3>
       <p style="color:var(--muted);font-size:13px;">Скачай полный словарь HSK 1–4 в память или добавь свой список слов из файла <b>.txt</b> / <b>.csv</b>.</p>
       <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px;">
         <button id="fetchHsk" class="cta" style="border:none;cursor:pointer;margin:0;text-align:center;">Скачать полный словарь HSK 1–4</button>
@@ -1287,10 +1287,10 @@ function settings() {
   const sfxTheme = localStorage.getItem('hsk_sfx_theme') || 'jade';
 
   app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
-    <h2 style="margin-top:0;text-align:center;">Настройки</h2>
+    <h2 style="margin-top:0;text-align:center;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;">НАСТРОЙКИ</h2>
 
     <div class="box">
-      <h3 style="margin-top:0;font-size:16px;text-align:center;">Мой уровень HSK</h3>
+      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">МОЙ УРОВЕНЬ HSK</h3>
       <p style="color:var(--muted);font-size:13px;text-align:center;">Переключись на другой уровень или пройди входной тест заново:</p>
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">
         <button data-set-lvl="1" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '1' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 1</button>
@@ -1306,27 +1306,28 @@ function settings() {
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;text-align:center;">Звук ответов</h3>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:8px;">
-        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;">
-          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;">
-          Включить звук
-        </label>
+      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЗВУК ОТВЕТОВ</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+          <div style="position:relative;display:inline-flex;align-items:center;">
+            <select id="sfxThemeSelect" style="appearance:none;-webkit-appearance:none;background:#EDF5F0;border:1.5px solid var(--jade);border-radius:10px;padding:6px 26px 6px 10px;font-size:13px;font-weight:700;color:var(--fg);cursor:pointer;">
+              <option value="jade" ${sfxTheme === 'jade' ? 'selected' : ''}>Нефритовая капля</option>
+              <option value="guzheng" ${sfxTheme === 'guzheng' ? 'selected' : ''}>Шорох бамбука</option>
+              <option value="bell" ${sfxTheme === 'bell' ? 'selected' : ''}>Горное эхо</option>
+            </select>
+            <span style="position:absolute;right:9px;pointer-events:none;font-size:10px;color:var(--jade);">▼</span>
+          </div>
+        </div>
         <div style="display:flex;gap:6px;">
           <button id="testSfxOk" class="ghost" style="font-size:13px;padding:6px 10px;">Верно</button>
           <button id="testSfxBad" class="ghost" style="font-size:13px;padding:6px 10px;">Ошибка</button>
         </div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px;">
-        <button data-sfx-theme="jade" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'jade' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Нефритовый</button>
-        <button data-sfx-theme="guzheng" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'guzheng' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Гучжэн</button>
-        <button data-sfx-theme="guqin" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'guqin' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Гуцинь</button>
-        <button data-sfx-theme="dizi" class="ghost" style="font-size:13px;padding:8px 6px;${sfxTheme === 'dizi' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">Флейта дицзы</button>
-      </div>
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;text-align:center;">Ежедневная напоминалка</h3>
+      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЕЖЕДНЕВНАЯ НАПОМИНАЛКА</h3>
       <p style="color:var(--muted);font-size:13px;text-align:center;">Напомнит о занятиях, если план на сегодня ещё не выполнен.</p>
       <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
         <label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;cursor:pointer;">
@@ -1340,15 +1341,15 @@ function settings() {
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;text-align:center;">Как добавить на главный экран</h3>
-      <div style="font-size:13px;color:var(--muted);line-height:1.55;">
-        <p style="margin:0 0 6px;"><b>iPhone (Safari):</b> нажми кнопку <b>«Поделиться»</b> (квадрат со стрелкой вверх внизу экрана) → выбери <b>«На экран „Домой“»</b> → нажми <b>«Добавить»</b>.</p>
-        <p style="margin:0;"><b>Android (Chrome):</b> нажми <b>три точки</b> в правом верхнем углу → выбери <b>«Добавить на гл. экран»</b> или <b>«Установить приложение»</b>.</p>
+      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">КАК ДОБАВИТЬ НА ГЛАВНЫЙ ЭКРАН</h3>
+      <div style="font-size:13px;color:var(--muted);line-height:1.55;text-align:center;">
+        <p style="margin:0 0 4px;"><b>iPhone:</b> «Поделиться» → «На экран „Домой“»</p>
+        <p style="margin:0;"><b>Android:</b> Меню (⋮) → «На главный экран»</p>
       </div>
     </div>
 
     <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:16px;text-align:center;">Поддержка</h3>
+      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ПОДДЕРЖКА</h3>
       <p style="color:var(--muted);font-size:13px;text-align:center;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
       <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:8px;display:block;text-align:center;font-size:14px;">Написать в поддержку (@alinaLinka20)</a>
     </div>
@@ -1377,24 +1378,14 @@ function settings() {
     localStorage.setItem('hsk_sfx_off', e.target.checked ? '0' : '1');
     if (e.target.checked) playFeedback(true);
   };
+  app.querySelector('#sfxThemeSelect').onchange = e => {
+    localStorage.setItem('hsk_sfx_theme', e.target.value);
+    localStorage.setItem('hsk_sfx_off', '0');
+    app.querySelector('#sfxToggle').checked = true;
+    playFeedback(true);
+  };
   app.querySelector('#testSfxOk').onclick = () => playFeedback(true);
   app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
-
-  app.querySelectorAll('[data-sfx-theme]').forEach(btn => {
-    btn.onclick = () => {
-      const th = btn.dataset.sfxTheme;
-      localStorage.setItem('hsk_sfx_theme', th);
-      localStorage.setItem('hsk_sfx_off', '0');
-      app.querySelector('#sfxToggle').checked = true;
-      app.querySelectorAll('[data-sfx-theme]').forEach(x => {
-        const active = x.dataset.sfxTheme === th;
-        x.style.borderColor = active ? 'var(--jade)' : '';
-        x.style.background = active ? '#EDF5F0' : '';
-        x.style.fontWeight = active ? '700' : '500';
-      });
-      playFeedback(true);
-    };
-  });
 
   const remStatus = app.querySelector('#remStatus');
   app.querySelector('#remToggle').onchange = async e => {
