@@ -1105,8 +1105,40 @@ function stats() {
       <p style="color:var(--muted);font-size:14px;">Формат строк: <code>иероглиф;пиньинь;перевод;уровень</code></p>
       <input type="file" id="csvFile" accept=".txt,.csv" style="margin-top:8px;">
     </div>
+        <div class="box">
+      <h3>🎯 Мой уровень HSK</h3>
+      <p style="color:var(--muted);font-size:14px;">Хочешь переключиться на другой уровень или заново пройти входной тест?</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
+        <button data-set-lvl="1" class="ghost" style="font-size:14px;">HSK 1</button>
+        <button data-set-lvl="2" class="ghost" style="font-size:14px;">HSK 2</button>
+        <button data-set-lvl="3" class="ghost" style="font-size:14px;">HSK 3</button>
+        <button data-set-lvl="4" class="ghost" style="font-size:14px;">HSK 4</button>
+      </div>
+      <div style="margin-top:10px;">
+        <a href="#/placement" class="ghost" style="font-size:14px;display:inline-block;">🔄 Пройти входной тест заново</a>
+      </div>
+      <p id="lvlSwitchStatus" style="margin-top:8px;font-size:13px;color:var(--jade);"></p>
+    </div>
+    <div class="box">
+      <h3>💬 Поддержка и обратная связь</h3>
+      <p style="color:var(--muted);font-size:14px;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
+      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:10px;display:inline-block;font-size:14px;">✈️ Написать в поддержку (@alinaLinka20)</a>
+    </div>
   </section>`;
   const remStatus = app.querySelector('#remStatus');
+    app.querySelectorAll('[data-set-lvl]').forEach(btn => {
+    btn.onclick = async () => {
+      const target = Number(btn.dataset.setLvl);
+      const stEl = app.querySelector('#lvlSwitchStatus');
+      await downloadLevelsUpTo(target, stEl);
+      localStorage.setItem('hsk_start_lvl', String(target));
+      selectedLevel = String(target);
+      selectedLesson = 0;
+      localStorage.setItem('hsk_lvl', selectedLevel);
+      localStorage.setItem('hsk_les', '0');
+      location.hash = '#/';
+    };
+  });
   app.querySelector('#remToggle').onchange = async e => {
     if (e.target.checked) {
       if (!('Notification' in window)) {
