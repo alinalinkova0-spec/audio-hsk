@@ -205,15 +205,15 @@ function home() {
           <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:8px;padding:12px;font-size:15px;">🎯 Я не знаю (пройти тест)</button>
         </div>
         <p id="welcomeLoadStatus" style="font-size:13px;color:var(--accent);font-weight:600;margin:2px 0;min-height:18px;"></p>
-        <div style="width:100%;max-width:210px;margin:0 auto;text-align:center;">
-          <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
-        </div>
-        <div style="margin-top:6px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
-        <div style="margin-bottom:4px;">💡 <b>Этот сайт можно добавить<br>на главный экран телефона<br>для быстрого доступа:</b></div>
-          <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
-          <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
-        </div>
-      </section>`;
+     <div style="margin-top:8px;font-size:12px;color:var(--muted);text-align:center;line-height:1.45;">
+       <div style="margin-bottom:3px;">💡 <b>Этот сайт можно добавить<br>на главный экран телефона для быстрого доступа:</b></div>
+       <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
+       <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
+     </div>
+     <div style="width:100%;max-width:260px;margin:2px auto 0;text-align:center;">
+       <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+     </div>
+   </section>`;
     app.querySelectorAll('[data-pick-lvl]').forEach(btn => {
       btn.onclick = async () => {
         const picked = Number(btn.dataset.pickLvl);
