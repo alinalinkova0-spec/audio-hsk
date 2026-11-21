@@ -202,10 +202,7 @@ function home() {
             <button class="ans" data-pick-lvl="3" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🌳 HSK 3</button>
             <button class="ans" data-pick-lvl="4" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🐉 HSK 4</button>
           </div>
-<button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:10px;padding:11px 13px;line-height:1.25;">
-  <div style="font-size:16px;font-weight:700;"> Я не знаю</div>
-  <div style="font-size:13px;font-weight:500;opacity:0.9;margin-top:2px;">(пройти тест)</div>
-</button>
+<button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:10px;padding:13px;font-size:16px;"> Я не знаю (пройти тест)</button>
         </div>
         <p id="welcomeLoadStatus" style="font-size:13px;color:var(--accent);font-weight:600;margin:0;"></p>
         <div style="margin:12px 0 8px;font-size:13px;color:var(--muted);text-align:center;line-height:1.5;">
