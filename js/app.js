@@ -135,7 +135,7 @@ function home() {
           <button class="ans" data-pick-lvl="2" style="padding:12px 14px;font-size:15px;text-align:left;">🌿 <b>HSK 2</b> — знаю базовые слова</button>
           <button class="ans" data-pick-lvl="3" style="padding:12px 14px;font-size:15px;text-align:left;">🌳 <b>HSK 3</b> — уверенно общаюсь</button>
           <button class="ans" data-pick-lvl="4" style="padding:12px 14px;font-size:15px;text-align:left;">🐉 <b>HSK 4</b> — продвинутый уровень</button>
-          <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:4px;">🎯 Я не знаю (пройти тест)</button>
+          <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:4px;"> Я не знаю (пройти тест)</button>
         </div>
         <p id="welcomeLoadStatus" style="font-size:14px;color:var(--accent);font-weight:600;min-height:20px;"></p>
         <div class="box" style="text-align:left;margin:10px 0;font-size:13px;line-height:1.55;color:var(--muted);">
@@ -273,12 +273,36 @@ const filtered = getFilteredWords();
 function startMode(mode) {
   lastMode = mode;
   localStorage.setItem('hsk_mode', mode);
+  const knownHanzi = new Set(
+    allWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).map(w => w.hanzi)
+  );
+  const scoreByKnownWords = text => {
+    let hits = 0;
+    for (const h of knownHanzi) {
+      if (h && text.includes(h)) hits += 1;
+    }
+    return hits;
+  };
 
   let steps = [];
   if (mode === 'words') {
     const filtered = getFilteredWords();
     const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
-    const ramp = buildRampQueue(slice);
+    const curLvl = Number(selectedLevel) || 1;
+    let pool = Array.from(slice);
+
+    if (curLvl > 1) {
+      const prevWords = allWords.filter(w => Number(w.level) < curLvl);
+      if (prevWords.length) {
+        const mixCount = Math.min(3, Math.max(2, Math.round(pool.length * 0.2)));
+        const prevSample = Array.from(prevWords)
+          .sort((a, b) => ((srs[a.id] && srs[a.id].reps) || 0) - ((srs[b.id] && srs[b.id].reps) || 0) + (Math.random() - 0.5))
+          .slice(0, mixCount);
+        pool = pool.slice(0, Math.max(4, pool.length - prevSample.length)).concat(prevSample);
+      }
+    }
+
+    const ramp = buildRampQueue(pool).slice(0, 12);
     steps = ramp.map((item, idx) => ({
       type: 'card',
       word: item.word,
@@ -289,22 +313,48 @@ function startMode(mode) {
     if (selectedLesson * 50 >= filtered.length) selectedLesson = 0;
     const slice = filtered.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
     const ruOnly = slice.filter(w => /[а-яё]/i.test(w.ru) && !w.ru.includes('MYMEMORY'));
-    const pool = ruOnly.length >= 4 ? ruOnly : slice;
-    const queue = Array.from(pool).sort(() => Math.random() - 0.5).slice(0, 10);
-    steps = queue.map((w, idx) => ({
+    const mainPool = ruOnly.length >= 4 ? ruOnly : slice;
+
+    const curLvl = Number(selectedLevel) || 1;
+    let mixedPool = Array.from(mainPool).sort(() => Math.random() - 0.5).slice(0, 10);
+    if (curLvl > 1 && mixedPool.length >= 4) {
+      const prevWords = allWords.filter(w => Number(w.level) < curLvl && /[а-яё]/i.test(w.ru));
+      if (prevWords.length) {
+        const prevPick = Array.from(prevWords).sort(() => Math.random() - 0.5).slice(0, 2);
+        mixedPool = mixedPool.slice(0, 8).concat(prevPick).sort(() => Math.random() - 0.5);
+      }
+    }
+
+    steps = mixedPool.map((w, idx) => ({
       type: 'blitz',
       word: w,
-      meta: { label: `${idx + 1}/${queue.length}` }
+      meta: { label: `${idx + 1}/${mixedPool.length}` }
     }));
   } else if (mode === 'stories') {
-    steps = Array.of({ type: 'story' }, { type: 'story' });
+    const curLvl = Number(selectedLevel) || 1;
+    const lvlStories = stories.filter(st => {
+      const firstLvl = Number(String(st.level).split('-').at(0)) || 1;
+      return firstLvl <= curLvl;
+    });
+    const sourceStories = lvlStories.length ? lvlStories : stories;
+    const rankedStories = Array.from(sourceStories)
+      .map(st => {
+        const fullText = st.lines.map(l => l.hanzi).join(' ');
+        return { st, score: scoreByKnownWords(fullText) + Math.random() * 0.5 };
+      })
+      .sort((a, b) => b.score - a.score);
+    const pickedStories = rankedStories.slice(0, 2).map(x => x.st);
+    steps = pickedStories.map(st => ({ type: 'story', story: st }));
   } else {
-    const due = dueItems(srs, sentences.map(s => s.id));
-    const ids = (due.length ? due : sentences.map(s => s.id)).slice(0, 4);
-    const queue = ids.map(id => sentences.find(s => s.id === id)).filter(Boolean);
+    const curLvl = Number(selectedLevel) || 1;
+    const lvlSentences = sentences.filter(s => !s.level || Number(s.level) <= curLvl);
+    const sourceSentences = lvlSentences.length >= 4 ? lvlSentences : sentences;
+    const rankedSentences = Array.from(sourceSentences)
+      .map(s => ({ s, score: scoreByKnownWords(s.hanzi) + Math.random() * 0.5 }))
+      .sort((a, b) => b.score - a.score);
+    const queue = rankedSentences.slice(0, 4).map(x => x.s);
     steps = queue.map(s => ({ type: 'phrase', sentence: s }));
   }
-
   let i = 0;
   let goalShown = false;
 
