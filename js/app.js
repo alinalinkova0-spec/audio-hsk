@@ -1,7 +1,7 @@
 import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=52';
-import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=10';
+import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=11';
 import { speak } from './audio.js?v=4';
 const VOCAB_KEY = 'hsk_vocab_v13';
 let allWords = loadVocab();
@@ -455,8 +455,14 @@ function startMode(mode) {
         showAllPlanDone();
         return;
       }
+      const totalLearnedNow = Object.values(srs).filter(s => s.reps >= 1).length;
+      const totalConfidentNow = Object.values(srs).filter(s => s.reps >= 3).length;
       app.innerHTML = `<section class="hero"><h1>Задание выполнено! ✓</h1>
-        <p>Пройдено упражнений: <b>${steps.length}</b></p>
+        <div class="box" style="text-align:left;max-width:340px;margin:12px auto;font-size:14px;line-height:1.7;">
+          <div>✅ Выполнено упражнений: <b>${steps.length}</b></div>
+          <div>📚 Всего слов в твоей памяти: <b>${totalLearnedNow}</b></div>
+          <div>⭐ Уверенно узнаёшь сразу: <b>${totalConfidentNow}</b></div>
+        </div>
         <div class="row" style="justify-content:center;gap:12px;margin-top:12px;">
           <button id="againBtn" class="ghost">Ещё раз</button>
           <a href="#/" class="cta">К списку заданий</a>
