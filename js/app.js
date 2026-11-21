@@ -287,6 +287,18 @@ function home() {
     localStorage.setItem('hsk_les', String(selectedLesson));
     history.replaceState(null, '', '#/');
   };
+
+  const prevBox = app.querySelector('#previewBox');
+  if (prevBox) {
+    let slideIdx = 0;
+    const titles = ['1/4 • Первый вход', '2/4 • План на сегодня выполнен', '3/4 • Пройден один уровень HSK', '4/4 • Пройдены все 4 уровня HSK'];
+    prevBox.onclick = () => {
+      app.querySelector('#prevSlide' + slideIdx).style.display = 'none';
+      slideIdx = (slideIdx + 1) % 4;
+      app.querySelector('#prevSlide' + slideIdx).style.display = 'block';
+      app.querySelector('#prevTitle').textContent = titles[slideIdx];
+    };
+  }
   
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
@@ -397,7 +409,7 @@ function startMode(mode) {
             <div style="position:relative;width:100%;max-width:340px;margin:0 auto;">
               <img src="./goose_all_done.jpg" alt="Все уровни пройдены" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
               <div style="position:absolute;left:32%;top:6%;width:38%;height:19%;background:#FBF7EF;border-radius:50%;display:flex;align-items:center;justify-content:center;text-align:center;padding:4px 8px;font-family:'Inter',sans-serif;font-weight:800;font-size:13px;line-height:1.25;color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,0.06);border:2px solid #F4C430;">
-                Молодец!<br>Всё пройдено! 🎉
+                Поздравляем! 🎉
               </div>
               <svg viewBox="0 0 100 100" style="position:absolute;right:0;bottom:23%;width:14%;height:14%;pointer-events:none;">
                 <path d="M 0 38 Q 22 48 34 66" fill="none" stroke="#181818" stroke-width="6" stroke-linecap="round"/>
