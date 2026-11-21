@@ -323,6 +323,7 @@ let sfxCtx = null;
 
 export function playFeedback(ok) {
   if (localStorage.getItem('hsk_sfx_off') === '1') return;
+  const theme = localStorage.getItem('hsk_sfx_theme') || 'jade';
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -330,8 +331,69 @@ export function playFeedback(ok) {
     if (sfxCtx.state === 'suspended') sfxCtx.resume();
 
     const now = sfxCtx.currentTime;
+
+    if (theme === 'guzheng') {
+      const notes = ok ? [523.25, 659.25, 783.99] : [293.66, 220.0];
+      notes.forEach((freq, i) => {
+        const t = now + i * 0.055;
+        const osc = sfxCtx.createOscillator();
+        const gain = sfxCtx.createGain();
+        osc.type = ok ? 'triangle' : 'sawtooth';
+        osc.frequency.setValueAtTime(freq, t);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.exponentialRampToValueAtTime(ok ? 0.1 : 0.06, t + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.24);
+        osc.connect(gain);
+        gain.connect(sfxCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.25);
+      });
+      return;
+    }
+
+    if (theme === 'guqin') {
+      const osc = sfxCtx.createOscillator();
+      const gain = sfxCtx.createGain();
+      osc.type = 'triangle';
+      if (ok) {
+        osc.frequency.setValueAtTime(196.0, now);
+        osc.frequency.exponentialRampToValueAtTime(293.66, now + 0.12);
+        osc.frequency.setValueAtTime(293.66, now + 0.13);
+      } else {
+        osc.frequency.setValueAtTime(174.61, now);
+        osc.frequency.exponentialRampToValueAtTime(130.81, now + 0.2);
+      }
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.exponentialRampToValueAtTime(0.13, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0008, now + 0.32);
+      osc.connect(gain);
+      gain.connect(sfxCtx.destination);
+      osc.start(now);
+      osc.stop(now + 0.34);
+      return;
+    }
+
+    if (theme === 'dizi') {
+      const notes = ok ? [880.0, 1046.5, 1318.5] : [659.25, 523.25];
+      notes.forEach((freq, i) => {
+        const t = now + i * 0.06;
+        const osc = sfxCtx.createOscillator();
+        const gain = sfxCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq * 0.985, t);
+        osc.frequency.exponentialRampToValueAtTime(freq, t + 0.025);
+        gain.gain.setValueAtTime(0.001, t);
+        gain.gain.exponentialRampToValueAtTime(0.085, t + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.18);
+        osc.connect(gain);
+        gain.connect(sfxCtx.destination);
+        osc.start(t);
+        osc.stop(t + 0.19);
+      });
+      return;
+    }
+
     if (ok) {
-      // Светлый нефритовый перезвон по пентатонике (Соль4 -> Ре5)
       const notes = [392.0, 587.33];
       notes.forEach((freq, i) => {
         const t = now + i * 0.075;
@@ -348,7 +410,6 @@ export function playFeedback(ok) {
         osc.stop(t + 0.2);
       });
     } else {
-      // Мягкий бамбуковый отклик вниз (Ми4 -> Си3)
       const notes = [329.63, 246.94];
       notes.forEach((freq, i) => {
         const t = now + i * 0.07;
