@@ -11,16 +11,20 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
- <header class="topbar" style="justify-content:center;">
-  <nav style="margin:0 auto;">
-    <a href="#/">Задания</a>
-    <a href="#/stats">Словарь</a>
-    <a href="#/settings">Настройки</a>
-    <a href="#/live"> Живой китайский</a>
-  </nav>
-</header>
+  <header class="topbar">
+    <a class="logo" href="#/">HSK 3.0</a>
+    <details class="nav-dropdown" id="topMenu">
+      <summary class="nav-toggle">Меню <span class="nav-arrow">▾</span></summary>
+      <nav class="nav-list">
+        <a href="#/">Задания</a>
+        <a href="#/stats">Словарь</a>
+        <a href="#/live">Живой китайский</a>
+        <a href="#/settings">Настройки</a>
+      </nav>
+    </details>
+  </header>
   <main id="app"></main>
-<script type="module" src="js/app.js?v=56"></script>
+<script type="module" src="js/app.js?v=60"></script>
   <script>
   if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
