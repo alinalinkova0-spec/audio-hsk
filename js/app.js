@@ -558,16 +558,22 @@ const taskButtons = plan.tasks.map((t, idx) => {
     : '';
   app.innerHTML = `
     <section class="hero">
-        <div style="display:inline-flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 4px;">
-        <span style="font-size:38px;font-weight:900;line-height:0.92;letter-spacing:-0.8px;color:var(--fg);">HSK 3.0</span>
-        <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;">
-          <span style="font-size:21px;font-weight:800;line-height:1.05;color:var(--fg);">听力训练</span>
-          ${knowsAll(['听力', '训练']) ? '' : '<span style="font-size:10px;font-weight:600;line-height:1.1;color:var(--jade);letter-spacing:0.3px;margin-top:2px;">Tīnglì xùnliàn</span>'}
+      <div style="display:inline-flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 4px;">
+        <span style="font-size:38px;font-weight:400;line-height:0.9;letter-spacing:-0.5px;color:var(--fg);">HSK 3.0</span>
+        <div style="display:inline-flex;align-items:flex-start;gap:6px;">
+          <div style="display:inline-flex;flex-direction:column;align-items:center;">
+            <span style="font-size:21px;font-weight:700;line-height:1.05;color:var(--fg);">听力</span>
+            ${knowsAll(['听力']) ? '' : '<span style="font-size:10px;font-weight:600;line-height:1.1;color:var(--jade);margin-top:2px;">Tīnglì</span>'}
+          </div>
+          <div style="display:inline-flex;flex-direction:column;align-items:center;">
+            <span style="font-size:21px;font-weight:700;line-height:1.05;color:var(--fg);">训练</span>
+            ${knowsAll(['训练']) ? '' : '<span style="font-size:10px;font-weight:600;line-height:1.1;color:var(--jade);margin-top:2px;">xùnliàn</span>'}
+          </div>
         </div>
       </div>
       <div style="color:var(--muted);opacity:0.95;font-size:13px;font-weight:700;letter-spacing:0.4px;margin:2px 0 6px;line-height:1.35;">
-        <div style="text-transform:uppercase;">${plan.badge}</div>
-        <div style="font-size:12px;font-weight:600;text-transform:none;">${plan.note}</div>
+        <div style="text-transform:uppercase;">${curMood === 'tired' ? 'АНТИСТРЕСС-РЕЖИМ' : (curMood === 'high' ? 'УСИЛЕННЫЙ ТЕМП' : 'ОБЫЧНЫЙ РИТМ')}</div>
+        <div style="font-size:12px;font-weight:600;text-transform:none;">Закрепляем знакомое</div>
       </div>
       ${examBannerHtml || (localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`)}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
