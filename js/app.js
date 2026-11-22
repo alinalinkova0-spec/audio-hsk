@@ -558,9 +558,17 @@ const taskButtons = plan.tasks.map((t, idx) => {
     : '';
   app.innerHTML = `
     <section class="hero">
-    <h1 style="margin-bottom:4px;">HSK 3.0 听力训练</h1>
-      ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin:0;">(Tīnglì xùnliàn)</div>'}
-      <p style="color:var(--muted);opacity:0.95;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;line-height:24px;margin:12px 0;">ТРЕНИРОВКА АУДИРОВАНИЯ</p>
+        <div style="display:inline-flex;align-items:center;justify-content:center;gap:10px;margin:0 auto 4px;">
+        <span style="font-size:38px;font-weight:900;line-height:0.92;letter-spacing:-0.8px;color:var(--fg);">HSK 3.0</span>
+        <div style="display:flex;flex-direction:column;align-items:flex-start;justify-content:center;text-align:left;">
+          <span style="font-size:21px;font-weight:800;line-height:1.05;color:var(--fg);">听力训练</span>
+          ${knowsAll(['听力', '训练']) ? '' : '<span style="font-size:10px;font-weight:600;line-height:1.1;color:var(--jade);letter-spacing:0.3px;margin-top:2px;">Tīnglì xùnliàn</span>'}
+        </div>
+      </div>
+      <div style="color:var(--muted);opacity:0.95;font-size:13px;font-weight:700;letter-spacing:0.4px;margin:2px 0 6px;line-height:1.35;">
+        <div style="text-transform:uppercase;">${plan.badge}</div>
+        <div style="font-size:12px;font-weight:600;text-transform:none;">${plan.note}</div>
+      </div>
       ${examBannerHtml || (localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`)}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
@@ -582,13 +590,6 @@ const taskButtons = plan.tasks.map((t, idx) => {
           <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Норма</span>
         </div>
         ${taskButtons}
-      </div>
-      <div class="box" style="width:100%;max-width:420px;margin:14px auto 0;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;">
-        <div>
-          <div style="font-size:15px;font-weight:800;color:var(--fg);">🌿 Живой китайский</div>
-          <div style="font-size:12px;color:var(--muted);line-height:1.35;">Разбери свою песню или текст · сборник сообщества</div>
-        </div>
-        <a href="#/live" class="ghost" style="padding:8px 12px;font-size:13px;font-weight:700;border-color:var(--jade);background:#EDF5F0;color:var(--jade);text-decoration:none;white-space:nowrap;">Открыть →</a>
       </div>
       <div style="width:100%;max-width:260px;margin:6px auto 0;text-align:center;overflow:hidden;">
         <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
