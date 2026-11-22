@@ -845,7 +845,6 @@ function startMode(mode) {
     };
     return;
   }
-    }
     const st = steps[i++];
     if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
     else if (st.type === 'read') renderReadCard(app, st.word, srs, next, st.meta);
