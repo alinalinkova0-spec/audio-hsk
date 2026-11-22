@@ -211,8 +211,11 @@ padding: 24px 0;
 
 .pinyin {
   color: var(--jade);
-  margin: 6px 0;
-  letter-spacing: normal;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: 0.3px;
+  margin: 4px 0;
 }
 
 .grades {
