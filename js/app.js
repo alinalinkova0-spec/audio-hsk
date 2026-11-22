@@ -31,23 +31,30 @@ function getInstallBoxHtml() {
   const isIOS = /iPad|iPhone|iPod/.test(ua);
   const isRestricted = /YaBrowser|Telegram|VKClient|Instagram|FBAN|FBAV|OKApp/i.test(ua);
 
+  const guideLines = `
+    <div style="text-align:left;font-size:13px;line-height:1.45;color:var(--fg);margin-bottom:10px;display:flex;flex-direction:column;gap:6px;">
+      <div><b>iPhone (только через Safari):</b> нажми «Поделиться» (квадрат со стрелкой вверх) → «На экран „Домой“».</div>
+      <div><b>Android (только через Google Chrome):</b> нажми кнопку ниже или три точки (⋮) → «Установить приложение».</div>
+      <div><b>Яндекс Браузер, Telegram или ВК:</b> скопируй ссылку и открой её в Safari или Chrome.</div>
+    </div>`;
+
   if (isRestricted) {
     return `
-      <div style="margin-top:10px;padding:12px;border-radius:12px;background:#FFF4E6;border:1px solid #F3D19E;text-align:center;">
-        <p style="margin:0 0 8px;font-size:13px;line-height:1.45;color:#8A4B08;">Чтобы установить как приложение, открой ссылку в <b>Safari</b> (iPhone) или <b>Chrome</b> (Android).</p>
-        <button class="ghost copy-app-link-btn" style="font-size:13px;padding:8px 12px;border-color:#F3D19E;background:#fff;color:#8A4B08;font-weight:700;">📋 Скопировать ссылку для Safari / Chrome</button>
+      <div style="margin-top:8px;padding:12px;border-radius:12px;background:#FFF4E6;border:1px solid #F3D19E;">
+        ${guideLines}
+        <button class="ghost copy-app-link-btn" style="width:100%;font-size:13px;padding:9px 12px;border-color:#F3D19E;background:#fff;color:#8A4B08;font-weight:700;">Скопировать ссылку для Safari / Chrome</button>
       </div>`;
   }
   if (isIOS) {
     return `
-      <div style="margin-top:10px;padding:12px;border-radius:12px;background:#EDF5F0;border:1px solid var(--jade);text-align:center;">
-        <p style="margin:0;font-size:13px;line-height:1.45;color:var(--fg);">📲 <b>Установка на iPhone (Safari):</b><br>Нажми значок <b>«Поделиться»</b> (квадрат со стрелкой вверх) → <b>«На экран „Домой“»</b>.</p>
+      <div style="margin-top:8px;padding:12px;border-radius:12px;background:#EDF5F0;border:1px solid var(--jade);">
+        ${guideLines}
       </div>`;
   }
   return `
-    <div style="margin-top:10px;padding:12px;border-radius:12px;background:#EDF5F0;border:1px solid var(--jade);text-align:center;">
-      <button class="primary pwa-install-btn" style="width:100%;font-size:14px;padding:10px 14px;margin-bottom:6px;">📲 Установить приложение</button>
-      <p style="margin:0;font-size:12px;line-height:1.4;color:var(--muted);">Для Android в <b>Google Chrome</b>: нажми кнопку выше или <b>три точки (⋮) → «Установить приложение»</b>.</p>
+    <div style="margin-top:8px;padding:12px;border-radius:12px;background:#EDF5F0;border:1px solid var(--jade);">
+      ${guideLines}
+      <button class="primary pwa-install-btn" style="width:100%;font-size:14px;padding:10px 14px;">Установить приложение</button>
     </div>`;
 }
 
@@ -560,7 +567,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
     <section class="hero">
       <div style="display:inline-flex;align-items:center;justify-content:center;gap:12px;margin:0 auto 4px;">
         <span style="font-size:38px;font-weight:400;line-height:0.9;letter-spacing:-0.5px;color:var(--fg);">HSK 3.0</span>
-        <div style="display:inline-flex;align-items:flex-start;gap:6px;">
+        <div id="headerTitleZh" title="Нажми, чтобы прослушать" style="display:inline-flex;align-items:flex-start;gap:6px;cursor:pointer;">
           <div style="display:inline-flex;flex-direction:column;align-items:center;">
             <span style="font-size:21px;font-weight:700;line-height:1.05;color:var(--fg);">听力</span>
             ${knowsAll(['听力']) ? '' : '<span style="font-size:10px;font-weight:600;line-height:1.1;color:var(--jade);margin-top:2px;">Tīnglì</span>'}
@@ -571,10 +578,10 @@ const taskButtons = plan.tasks.map((t, idx) => {
           </div>
         </div>
       </div>
+
       <div style="color:var(--muted);opacity:0.95;font-size:13px;font-weight:700;letter-spacing:0.4px;margin:2px 0 6px;line-height:1.35;">
         <div style="text-transform:uppercase;">${curMood === 'tired' ? 'АНТИСТРЕСС-РЕЖИМ' : (curMood === 'high' ? 'УСИЛЕННЫЙ ТЕМП' : 'ОБЫЧНЫЙ РИТМ')}</div>
       </div>
-      ${examBannerHtml || (localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`)}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
@@ -587,6 +594,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
         <select id="lesSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">${lessonOptions}</select>
       </div>
       ${levelUpBanner}
+      ${examBannerHtml || (localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:8px auto 0;padding:7px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`)}
       <div style="width:100%;max-width:420px;margin:10px auto 0;display:flex;flex-direction:column;gap:8px;">
       <div style="text-align:center;font-size:13px;color:var(--jade);font-weight:700;letter-spacing:0.3px;">Фокус дня: закрепляем знакомое</div>
         <div style="display:grid;grid-template-columns:1fr 56px 56px;align-items:baseline;gap:6px;margin-top:12px;padding:0 14px;">
@@ -1545,15 +1553,16 @@ function settings() {
       </div>
     </div>
     <div class="box" style="margin-top:14px;padding:14px;">
-      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">НОЧНЫЕ ЗАНЯТИЯ (ПОСЛЕ 00:00)</h3>
-      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Если выполнила план ночью после 12,<br>обновлять ли задание снова утром (с 06:00)?</p>
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">НОЧНОЙ РЕЖИМ ЗАНЯТИЙ</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Если занимаешься после полуночи, уроки с 00:00 до 04:00 засчитаются за вчерашний день — серия дней (стрик) не собьётся.</p>
       <div style="display:flex;align-items:center;justify-content:center;">
         <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;">
-          <input type="checkbox" id="morningResetToggle" ${morningResetOn ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--jade);cursor:pointer;">
-          Обновлять задание утром заново
+          <input type="checkbox" id="morningResetToggle" ${morningResetOn ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+          Засчитывать ночные занятия до 04:00 за вчерашний день
         </label>
       </div>
     </div>
+
     <div class="box" style="margin-top:14px;padding:14px;">
       <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ПОДГОТОВКА К ЭКЗАМЕНУ HSK</h3>
       <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Укажи дату экзамена или запусти спринт —<br>программа сама рассчитает норму слов на день.</p>
@@ -1578,10 +1587,12 @@ function settings() {
       <p id="remStatus" style="margin:8px 0 0;font-size:13px;color:var(--jade);text-align:center;"></p>
     </div>
 
-    <div class="box" style="margin-top:14px;padding:14px;">
-      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">УСТАНОВИТЬ КАК ПРИЛОЖЕНИЕ</h3>
-      ${getInstallBoxHtml() || '<p style="margin:0;font-size:13px;color:var(--jade);text-align:center;font-weight:600;">✅ Приложение уже установлено на твоё устройство!</p>'}
+      <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ДОБАВИТЬ НА ЭКРАН ТЕЛЕФОНА</h3>
+      <p style="margin:0 0 8px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Открой тренажёр с рабочего стола в одно касание, как обычное приложение из магазина — без адресной строки браузера.</p>
+      ${getInstallBoxHtml() || '<p style="margin:0;font-size:13px;color:var(--jade);text-align:center;font-weight:600;">Приложение уже добавлено на экран твоего устройства.</p>'}
     </div>
+
 
     <div class="box" style="margin-top:14px;padding:14px;">
       <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ПОДДЕРЖКА</h3>
@@ -1957,3 +1968,5 @@ async function liveChinese() {
 
   loadCommunityList();
 }
+
+document.querySelectorAll('#topMenu a').forEach(a => a.addEventListener('click', () => { const m = document.getElementById('topMenu'); if (m) m.removeAttribute('open'); }));
