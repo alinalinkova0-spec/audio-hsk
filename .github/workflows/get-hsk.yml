@@ -8,14 +8,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build HSK 1-4 JSON
+      - name: Build HSK 1-6 JSON
         run: |
           gh repo clone drkameleon/complete-hsk-vocabulary tmp -- --depth=1
           node -e '
             const fs = require("fs");
             const out = [];
             let id = 1;
-            for (const lvl of Array.of(1, 2, 3, 4)) {
+            for (const lvl of Array.of(1, 2, 3, 4, 5, 6)) {
               const arr = JSON.parse(fs.readFileSync(`tmp/wordlists/exclusive/new/${lvl}.min.json`, "utf8"));
               for (const w of arr) {
                 const f = (w.f && w.f[0]) || (w.forms && w.forms[0]) || {};
@@ -37,5 +37,4 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
           git add hsk.json
-          git diff --quiet && git diff --staged --quiet || (git commit -m "Update hsk.json 1-4" && git push)
-          
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update hsk.json 1-6" && git push)
