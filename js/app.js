@@ -2,7 +2,7 @@ import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { loadSRS, saveSRS, dueItems } from './srs.js';
 import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=55';
 import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=12';
-import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=9';
+import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=10';
 const VOCAB_KEY = 'hsk_vocab_v13';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
@@ -14,13 +14,30 @@ const srs = loadSRS();
 if (!localStorage.getItem('hsk_start_date')) {
   localStorage.setItem('hsk_start_date', new Date().toISOString());
 }
-function getTodayKey() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `hsk_daily_${y}-${m}-${day}`;
+function getEffectiveDateStr() {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const base = `${y}-${m}-${day}`;
+  if (localStorage.getItem('hsk_morning_reset') === '1' && now.getHours() < 6) {
+    return `${base}_night`;
+  }
+  return base;
 }
+
+function getNotifyGooseIcon() {
+  const h = new Date().getHours();
+  if (h >= 6 && h < 10) return './goose_morning.jpg';
+  if (h >= 12 && h < 14) return './goose_lunch.jpg';
+  if (h >= 10 && h < 21) return './goose_bonsai.jpg';
+  return './goose_mood.jpg';
+}
+
+function getTodayKey() {
+  return `hsk_daily_${getEffectiveDateStr()}`;
+}
+
 function getDaily() {
   try {
     const raw = JSON.parse(localStorage.getItem(getTodayKey())) || {};
@@ -40,11 +57,7 @@ function addDaily(mode, count) {
   localStorage.setItem(getTodayKey(), JSON.stringify(d));
 }
 function getTodayMoodKey() {
-  const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `hsk_mood_${y}-${m}-${day}`;
+  return `hsk_mood_${getEffectiveDateStr()}`;
 }
 
 function getTodayMood() {
@@ -361,9 +374,9 @@ const filtered = getFilteredWords();
             ${moodButtonsHtml}
           </div>
         </div>
-        <div id="moodGooseBox" style="display:none;width:100%;max-width:240px;margin:14px auto 0;text-align:center;">
-          <img id="moodGooseImg" src="" alt="Гусь настроения" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
-        </div>
+      <div id="moodGooseBox" style="width:100%;max-width:260px;margin:14px auto 0;text-align:center;">
+       <img id="moodGooseImg" src="./goose_mood.jpg" alt="Гусь настроения" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+     </div>
       </section>`;
 
     let moodLocked = false;
@@ -413,11 +426,27 @@ const taskButtons = plan.tasks.map((t, idx) => {
 }).join('');
 
   const hr = new Date().getHours();
-  const gooseImg = (hr >= 6 && hr < 10)
-    ? './goose_morning.jpg'
-    : (hr >= 10 && hr < 21)
-      ? './goose.jpg'
-      : './goose_night.jpg';
+  const isPlanDoneToday = plan.tasks.every(t => (d[t.id] || 0) >= t.goal);
+  const surpriseKey = `hsk_surprise_hr_${getEffectiveDateStr()}`;
+  let surpriseHr = Number(localStorage.getItem(surpriseKey));
+  if (!surpriseHr) {
+    const daySlots =;
+    surpriseHr = daySlots[Math.floor(Math.random() * daySlots.length)];
+    localStorage.setItem(surpriseKey, String(surpriseHr));
+  }
+
+  let gooseImg = './goose.jpg';
+  if (isPlanDoneToday) {
+    gooseImg = './goose_plan_done.gif';
+  } else if (hr >= 6 && hr < 10) {
+    gooseImg = './goose_morning.jpg';
+  } else if (hr >= 12 && hr < 14) {
+    gooseImg = './goose_lunch.jpg';
+  } else if (hr >= 21 || hr < 6) {
+    gooseImg = './goose_night.jpg';
+  } else if (hr === surpriseHr || curMood === 'tired') {
+    gooseImg = './goose_bonsai.jpg';
+  }
   const streak = Number(localStorage.getItem('hsk_streak') || 0);
   const nextLvl = curLvlNum + 1;
   const canLevelUp = streak >= 10 && curLvlNum < 4;
@@ -738,25 +767,50 @@ function startMode(mode) {
       }
       const totalLearnedNow = Object.values(srs).filter(s => s.reps >= 1).length;
       const totalConfidentNow = Object.values(srs).filter(s => s.reps >= 3).length;
-  const lesList = ALL_WORDS.filter(w => String(w.level) === String(selectedLevel) && Number(w.lesson) === Number(selectedLesson));
+  const lvlWordsAll = allWords.filter(w => String(w.level) === String(selectedLevel));
+  const lesList = lvlWordsAll.slice(selectedLesson * 50, (selectedLesson + 1) * 50);
   const lesDone = lesList.length > 0 && lesList.every(w => (srs[w.id]?.reps || 0) >= 1);
   const lesBadgeKey = `hsk_les_badge_${selectedLevel}_${selectedLesson}`;
   const showLessonGoose = lesDone && !localStorage.getItem(lesBadgeKey);
   if (showLessonGoose) localStorage.setItem(lesBadgeKey, '1');
+    const planNow = getDailyPlan(getTodayMood());
+    const dNow = getDaily();
+    const nextUnfinished = planNow.tasks.find(t => (dNow[t.id] || 0) < t.goal);
+    const nextTaskBtn = nextUnfinished
+      ? `<button id="nextTaskBtn" class="cta" style="margin:0;border:none;cursor:pointer;">Дальше: ${nextUnfinished.title.replace(/^\d+\.\s*/, '')} →</button>`
+      : '';
 
-  app.innerHTML = `<section class="hero">
-    ${showLessonGoose ? `<div style="max-width:230px;margin:0 auto 10px;"><img src="./goose_lesson_done.jpg" alt="Урок пройден!" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;"></div><h1 style="margin-bottom:6px;">Урок пройден! 🏆</h1>` : `<h1>Задание выполнено! ✓</h1>`}
-        <div class="box" style="text-align:left;max-width:340px;margin:12px auto;font-size:14px;line-height:1.7;">
-          <div>✅ Выполнено упражнений: <b>${steps.length}</b></div>
-          <div>📚 Всего слов в твоей памяти: <b>${totalLearnedNow}</b></div>
-          <div>⭐ Уверенно узнаёшь сразу: <b>${totalConfidentNow}</b></div>
+    app.innerHTML = `<section class="hero">
+      ${showLessonGoose ? `<div style="max-width:230px;margin:0 auto 10px;"><img src="./goose_lesson_done.jpg" alt="Урок пройден!" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;"></div><h1 style="margin-bottom:6px;">Урок пройден! 🏆</h1>` : `<h1>Задание выполнено! ✓</h1>`}
+      <div class="box" style="text-align:left;max-width:340px;margin:12px auto;font-size:14px;line-height:1.7;">
+        <div>✅ Выполнено упражнений: <b>${steps.length}</b></div>
+        <div>📚 Всего слов в твоей памяти: <b>${totalLearnedNow}</b></div>
+        <div>⭐ Уверенно узнаёшь сразу: <b>${totalConfidentNow}</b></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;max-width:340px;margin:12px auto 0;">
+        ${nextTaskBtn}
+        <div class="row" style="justify-content:center;gap:10px;">
+          <button id="againBtn" class="ghost" style="flex:1;">Ещё раз</button>
+          <button id="backHomeBtn" class="ghost" style="flex:1;font-weight:700;">К списку заданий</button>
         </div>
-        <div class="row" style="justify-content:center;gap:12px;margin-top:12px;">
-          <button id="againBtn" class="ghost">Ещё раз</button>
-          <a href="#/" class="cta">К списку заданий</a>
-        </div></section>`;
-      app.querySelector('#againBtn').onclick = () => startMode(mode);
-      return;
+      </div></section>`;
+    if (nextUnfinished) {
+      app.querySelector('#nextTaskBtn').onclick = () => {
+        stopAudio();
+        startMode(nextUnfinished.id);
+      };
+    }
+    app.querySelector('#againBtn').onclick = () => {
+      stopAudio();
+      startMode(mode);
+    };
+    app.querySelector('#backHomeBtn').onclick = () => {
+      stopAudio();
+      if (location.hash === '#/' || !location.hash) home();
+      else location.hash = '#/';
+    };
+    return;
+  }
     }
     const st = steps[i++];
     if (st.type === 'card') renderCard(app, st.word, srs, next, st.meta);
@@ -1329,7 +1383,7 @@ function settings() {
   const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
   const sfxOn = localStorage.getItem('hsk_sfx_off') !== '1';
   const sfxTheme = localStorage.getItem('hsk_sfx_theme') || 'jade';
-
+  const morningResetOn = localStorage.getItem('hsk_morning_reset') === '1';
   app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
     <h2 style="margin-top:0;text-align:center;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;">НАСТРОЙКИ</h2>
 
@@ -1369,7 +1423,16 @@ function settings() {
         </div>
       </div>
     </div>
-
+    <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">НОЧНЫЕ ЗАНЯТИЯ (ПОСЛЕ 00:00)</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Если выполнила план ночью после 12,<br>обновлять ли задание снова утром (с 06:00)?</p>
+      <div style="display:flex;align-items:center;justify-content:center;">
+        <label style="display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer;">
+          <input type="checkbox" id="morningResetToggle" ${morningResetOn ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--jade);cursor:pointer;">
+          Обновлять задание утром заново
+        </label>
+      </div>
+    </div>
     <div class="box" style="margin-top:14px;padding:14px;">
       <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЕЖЕДНЕВНАЯ НАПОМИНАЛКА</h3>
       <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Напомнит о занятиях,<br>если план на сегодня ещё не выполнен.</p>
@@ -1435,7 +1498,9 @@ function settings() {
   };
   app.querySelector('#testSfxOk').onclick = () => playFeedback(true);
   app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
-
+  app.querySelector('#morningResetToggle').onchange = e => {
+    localStorage.setItem('hsk_morning_reset', e.target.checked ? '1' : '0');
+  };
   app.querySelector('#remToggle').onchange = async e => {
     remStatus.style.display = 'block';
     if (e.target.checked) {
@@ -1476,7 +1541,7 @@ function settings() {
     if (perm === 'granted') {
       new Notification('HSK 3.0 听力训练 🦆', {
         body: 'Пора размять слух! Загляни выполнить план на сегодня.',
-        icon: './goose.jpg'
+        icon: getNotifyGooseIcon()
       });
       remStatus.textContent = 'Тестовое уведомление отправлено!';
     } else {
@@ -1506,7 +1571,7 @@ setInterval(() => {
     if (!doneAll) {
 new Notification('HSK 3.0 听力训练 🦆', {
         body: 'Пора размять слух! План на сегодня ещё ждёт тебя.',
-        icon: './goose.jpg'
+          icon: getNotifyGooseIcon()
       });
     }
   }
