@@ -242,7 +242,7 @@ function home() {
         <h1 style="margin:0 0 6px;font-size:28px;">Привет!</h1>
         <p style="font-size:16px;line-height:1.4;color:var(--fg);margin:0;">
           Это тренажёр аудирования<br>
-          по новому <b>HSK 3.0 (1–4 уровни)</b>
+          по новому <b>HSK 3.0 (1–6 уровни)</b>
         </p>
               <div style="margin:10px auto 0;padding:8px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:13px;line-height:1.4;color:var(--fg);">
         💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажер под себя
@@ -254,6 +254,8 @@ function home() {
             <button class="ans" data-pick-lvl="2" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🌿 HSK 2</button>
             <button class="ans" data-pick-lvl="3" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🌳 HSK 3</button>
             <button class="ans" data-pick-lvl="4" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🐉 HSK 4</button>
+            <button class="ans" data-pick-lvl="5" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🏔️ HSK 5</button>
+            <button class="ans" data-pick-lvl="6" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">👑 HSK 6</button>
           </div>
 <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:10px;padding:13px;font-size:16px;"> Я не знаю (пройти тест)</button>
         </div>
@@ -291,12 +293,23 @@ function home() {
   const p2 = getLevelProgress(2);
   const p3 = getLevelProgress(3);
   const p4 = getLevelProgress(4);
+  const p5 = getLevelProgress(5);
+  const p6 = getLevelProgress(6);
 
   const unlocked2 = p1 >= 95 || userStartLvl >= 2;
   const unlocked3 = (unlocked2 && p2 >= 95) || userStartLvl >= 3;
   const unlocked4 = (unlocked3 && p3 >= 95) || userStartLvl >= 4;
+  const unlocked5 = (unlocked4 && p4 >= 95) || userStartLvl >= 5;
+  const unlocked6 = (unlocked5 && p5 >= 95) || userStartLvl >= 6;
 
-  if (selectedLevel === 'all' || (selectedLevel === '2' && !unlocked2) || (selectedLevel === '3' && !unlocked3) || (selectedLevel === '4' && !unlocked4)) {
+  if (
+    selectedLevel === 'all' ||
+    (selectedLevel === '2' && !unlocked2) ||
+    (selectedLevel === '3' && !unlocked3) ||
+    (selectedLevel === '4' && !unlocked4) ||
+    (selectedLevel === '5' && !unlocked5) ||
+    (selectedLevel === '6' && !unlocked6)
+  ) {
     selectedLevel = String(userStartLvl || 1);
     localStorage.setItem('hsk_lvl', selectedLevel);
   }
@@ -482,7 +495,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
   }
   const streak = Number(localStorage.getItem('hsk_streak') || 0);
   const nextLvl = curLvlNum + 1;
-  const canLevelUp = streak >= 10 && curLvlNum < 4;
+  const canLevelUp = streak >= 10 && curLvlNum < 6;
   const levelUpBanner = canLevelUp
     ? `<div class="box" style="width:100%;max-width:420px;margin:12px auto 0;background:#FFF8E7;border-color:#F59E0B;text-align:left;padding:12px;">
          <div style="font-weight:700;font-size:14px;color:#B45309;">🔥 Отличная серия: ${streak} верных ответов подряд!</div>
@@ -502,6 +515,8 @@ const taskButtons = plan.tasks.map((t, idx) => {
        <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? `HSK 2 (${p2}%)` : 'HSK 2 🔒'}</option>
        <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? `HSK 3 (${p3}%)` : 'HSK 3 🔒'}</option>
        <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? `HSK 4 (${p4}%)` : 'HSK 4 🔒'}</option>
+       <option value="5" ${selectedLevel === '5' ? 'selected' : ''} ${unlocked5 ? '' : 'disabled'}>${unlocked5 ? `HSK 5 (${p5}%)` : 'HSK 5 🔒'}</option>
+       <option value="6" ${selectedLevel === '6' ? 'selected' : ''} ${unlocked6 ? '' : 'disabled'}>${unlocked6 ? `HSK 6 (${p6}%)` : 'HSK 6 🔒'}</option>
      </select>
         <select id="lesSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">${lessonOptions}</select>
       </div>
@@ -700,11 +715,13 @@ function startMode(mode) {
       const curLvl = Number(selectedLevel) || 1;
       const lvlDone = getLevelProgress(curLvl) >= 95;
       if (lvlDone) {
-        const allLevelsDone =
-          getLevelProgress(1) >= 95 &&
-          getLevelProgress(2) >= 95 &&
-          getLevelProgress(3) >= 95 &&
-          getLevelProgress(4) >= 95;
+   const allLevelsDone =
+     getLevelProgress(1) >= 95 &&
+     getLevelProgress(2) >= 95 &&
+     getLevelProgress(3) >= 95 &&
+     getLevelProgress(4) >= 95 &&
+     getLevelProgress(5) >= 95 &&
+     getLevelProgress(6) >= 95;
         if (allLevelsDone) {
           const startIso = localStorage.getItem('hsk_start_date') || new Date().toISOString();
           const daysSpent = Math.max(1, Math.ceil((Date.now() - new Date(startIso).getTime()) / 86400000));
@@ -728,9 +745,9 @@ function startMode(mode) {
             <div class="box" style="text-align:left;margin:16px 0;font-size:14px;line-height:1.7;">
               <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">🏆 Твои итоги пути:</h3>
               <div>⏱ Времени в обучении: <b>${daysSpent} дн.</b></div>
-              <div>🎧 Освоено слов HSK 1–4 на слух: <b>${learnedTotal}</b> из ${allWords.length}</div>
+              <div>🎧 Освоено слов HSK 1–6 на слух: <b>${learnedTotal}</b> из ${allWords.length}</div>
               <div>⭐ Узнаёшь мгновенно без подсказок: <b>${confidentTotal} слов</b></div>
-              <div>🎓 Уровень восприятия на слух: <b>Уверенный HSK 4</b></div>
+              <div>🎓 Уровень восприятия на слух: <b>Уверенный HSK 6</b></div>
             </div>
             <div class="box" style="text-align:left;margin:16px 0;">
               <h3 style="margin-top:0;margin-bottom:6px;font-size:16px;">💌 Обратная связь автору</h3>
@@ -759,7 +776,7 @@ function startMode(mode) {
           return;
         }
         const curPct = getLevelProgress(curLvl);
-        const nextLvlNum = Math.min(4, curLvl + 1);
+     const nextLvlNum = Math.min(6, curLvl + 1);
         app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
           <div style="position:relative;width:100%;max-width:310px;margin:0 auto;">
             <img src="./goose_win.jpg" alt="Успешно пройден HSK ${curLvl}" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
@@ -991,7 +1008,7 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       });
     }
 
-    const byLvl = { lvl1: [], lvl2: [], lvl3: [], lvl4: [] };
+    const byLvl = { lvl1: [], lvl2: [], lvl3: [], lvl4: [], lvl5: [], lvl6: [] };
     for (const item of raw) {
       let hanzi = '';
       let lvl = 0;
@@ -1005,7 +1022,7 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
         en = String(item.ru || '').replace(/\([^)]*\)/g, '').split(/[,;/]/).at(0).trim();
       } else {
         const lvls = item.l || item.level || Array.of();
-        lvl = Array.of(1, 2, 3, 4).find(n => lvls.includes('n' + n)) || 0;
+      lvl = Array.of(1, 2, 3, 4, 5, 6).find(n => lvls.includes('n' + n)) || 0;
         const forms = item.f || item.forms || Array.of();
         const form = forms.at(0) || {};
         hanzi = item.s || item.simplified || '';
@@ -1025,7 +1042,7 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
     const testQueue = [];
     const pickTwo = arr => arr.sort(() => Math.random() - 0.5).slice(0, 2);
 
-    for (const lvl of Array.of(1, 2, 3, 4)) {
+    for (const lvl of Array.of(1, 2, 3, 4, 5, 6)) {
       const list = byLvl['lvl' + lvl];
       const third = Math.max(2, Math.floor(list.length / 3));
       const easy = pickTwo(list.slice(0, third)).map(w => ({ ...w, diff: 'easy' }));
@@ -1059,13 +1076,15 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       lvl1: { ok: 0, hardOk: 0 },
       lvl2: { ok: 0, hardOk: 0 },
       lvl3: { ok: 0, hardOk: 0 },
-      lvl4: { ok: 0, hardOk: 0 }
+      lvl4: { ok: 0, hardOk: 0 },
+      lvl5: { ok: 0, hardOk: 0 },
+      lvl6: { ok: 0, hardOk: 0 }
     };
 
     function renderQuestion() {
       if (idx >= validQueue.length) {
         let detected = 1;
-        for (const lvl of Array.of(1, 2, 3)) {
+        for (const lvl of Array.of(1, 2, 3, 4, 5)) {
           const st = statsByLvl['lvl' + lvl];
           if (st.ok >= 5 && st.hardOk >= 1) {
             detected = lvl + 1;
@@ -1424,11 +1443,13 @@ function settings() {
     <div class="box" style="padding:14px;">
       <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">МОЙ УРОВЕНЬ HSK</h3>
       <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Переключись на другой уровень<br>или пройди входной тест заново:</p>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;">
         <button data-set-lvl="1" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '1' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 1</button>
         <button data-set-lvl="2" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '2' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 2</button>
         <button data-set-lvl="3" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '3' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 3</button>
         <button data-set-lvl="4" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '4' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 4</button>
+        <button data-set-lvl="5" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '5' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 5</button>
+        <button data-set-lvl="6" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '6' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 6</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
         <a href="#/placement" class="ghost" style="flex:1;text-align:center;font-size:13px;padding:9px 8px;">🎯 Входной тест заново</a>
