@@ -463,7 +463,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
   const surpriseKey = `hsk_surprise_hr_${getEffectiveDateStr()}`;
   let surpriseHr = Number(localStorage.getItem(surpriseKey));
   if (!surpriseHr) {
-    const daySlots =;
+    const daySlots = new Array(10, 11, 14, 15, 16, 17, 18, 19, 20);
     surpriseHr = daySlots[Math.floor(Math.random() * daySlots.length)];
     localStorage.setItem(surpriseKey, String(surpriseHr));
   }
