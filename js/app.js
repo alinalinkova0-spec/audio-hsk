@@ -316,10 +316,10 @@ const filtered = getFilteredWords();
   );
   const knowsAll = wordsList => wordsList.every(w => knownSet.has(w));
 
-  const MOODS = Array.of(
+   const MOODS = Array.of(
     {
       id: 'high',
-      icon: '⚡',
+      img: './goose_mood.jpg',
       ru: 'Готова изучать китайский язык!',
       zh: '我准备好学习汉语了！',
       py: 'Wǒ zhǔnbèi hǎo xuéxí Hànyǔ le!',
@@ -327,7 +327,7 @@ const filtered = getFilteredWords();
     },
     {
       id: 'normal',
-      icon: '🙂',
+      img: './goose_mood.jpg',
       ru: 'Могу уделить немного времени',
       zh: '我能抽出一点儿时间',
       py: 'Wǒ néng chōuchū yīdiǎnr shíjiān',
@@ -335,36 +335,38 @@ const filtered = getFilteredWords();
     },
     {
       id: 'tired',
-      icon: '😴',
-      ru: 'Готова умереть от усталости',
-      zh: '我累死了',
-      py: 'Wǒ lèi sǐ le',
-      hideHelper: curLvlNum >= 3 || knowsAll(Array.of('我', '累', '死', '了'))
+      img: './goose_night.jpg',
+      ru: 'Совсем без сил',
+      zh: '我好累啊',
+      py: 'Wǒ hǎo lèi a',
+      hideHelper: curLvlNum >= 3 || knowsAll(Array.of('我', '好', '累', '啊'))
     }
   );
 
   if (!curMood) {
     const moodButtonsHtml = MOODS.map(m => {
       const textHtml = m.hideHelper
-        ? `<div style="font-size:19px;font-weight:700;color:var(--fg);">${m.zh}</div>`
-        : `<div style="font-size:16px;font-weight:700;color:var(--fg);">${m.ru}</div>
-           <div style="font-size:14px;color:var(--jade);font-weight:600;margin-top:3px;">${m.zh} <span style="color:var(--muted);font-weight:400;">(${m.py})</span></div>`;
-      return `<button class="ans" data-mood="${m.id}" data-say-zh="${m.zh.trim()}" style="width:100%;text-align:center;padding:15px 14px;border-radius:14px;">${textHtml}</button>`;
+        ? `<div style="font-size:19px;font-weight:700;color:var(--fg);line-height:24px;">${m.zh}</div>`
+        : `<div style="font-size:18px;font-weight:700;color:var(--fg);line-height:24px;">${m.zh}</div>
+           <div style="font-size:13px;color:var(--jade);font-weight:600;margin-top:2px;">${m.py}</div>
+           <div style="font-size:14px;color:var(--muted);margin-top:3px;">${m.ru}</div>`;
+      return `<button class="ans" data-mood="${m.id}" data-mood-img="${m.img}" data-say-zh="${m.zh.trim()}" style="width:100%;text-align:center;padding:12px 14px;border-radius:14px;">${textHtml}</button>`;
     }).join('');
 
     app.innerHTML = `
       <section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px 12px;">
-        <h2 style="margin:0 0 14px;font-size:22px;text-align:center;"> Какой ты сегодня?</h2>
+        <h2 style="margin:0 0 14px;font-size:22px;line-height:24px;text-align:center;">Какой ты сегодня?</h2>
         <div class="box" style="margin:0;padding:12px;">
           <div style="display:flex;flex-direction:column;gap:9px;">
             ${moodButtonsHtml}
           </div>
         </div>
-        <div style="width:100%;max-width:250px;margin:14px auto 0;text-align:center;">
-          <img src="./goose_mood.jpg" alt="Задумчивый гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
+        <div id="moodGooseBox" style="display:none;width:100%;max-width:240px;margin:14px auto 0;text-align:center;">
+          <img id="moodGooseImg" src="" alt="Гусь настроения" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
         </div>
       </section>`;
-     let moodLocked = false;
+
+    let moodLocked = false;
     app.querySelectorAll('[data-mood]').forEach(btn => {
       btn.onclick = async () => {
         if (moodLocked) return;
@@ -373,17 +375,23 @@ const filtered = getFilteredWords();
         btn.classList.add('ok');
         btn.style.borderColor = 'var(--jade)';
         btn.style.background = '#EDF5F0';
+
+        const gooseBox = app.querySelector('#moodGooseBox');
+        const gooseImgEl = app.querySelector('#moodGooseImg');
+        gooseImgEl.src = btn.dataset.moodImg;
+        gooseBox.style.display = 'block';
+
         const playRes = speak(btn.dataset.sayZh, { rate: 0.95 });
         if (playRes && typeof playRes.then === 'function') {
           await playRes;
         } else {
-        await new Promise(r => setTimeout(r, 3500));
-      }
-      setTimeout(() => home(), 2500);
-    };
-  });
-  return;
-}
+          await new Promise(r => setTimeout(r, 2500));
+        }
+        setTimeout(() => home(), 1400);
+      };
+    });
+    return;
+  }
 
 const taskButtons = plan.tasks.map((t, idx) => {
   const doneCount = d[t.id] || 0;
@@ -424,7 +432,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
     <section class="hero">
     <h1 style="margin-bottom:4px;">HSK 3.0 听力训练</h1>
       ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin:0;">(Tīnglì xùnliàn)</div>'}
-      <p style="color:var(--muted);opacity:0.9;font-size:15px;font-weight:500;margin:6px 0;">Тренировка аудирования</p>
+      <p style="color:var(--muted);opacity:0.95;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;line-height:24px;margin:12px 0;">ТРЕНИРОВКА АУДИРОВАНИЯ</p>
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
@@ -436,7 +444,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
       </div>
       ${levelUpBanner}
       <div style="width:100%;max-width:420px;margin:20px auto 0;display:flex;flex-direction:column;gap:8px;">
-        <div style="text-align:center;font-size:12px;color:var(--jade);font-weight:700;text-transform:uppercase;letter-spacing:0.4px;padding:0 6px;">${plan.focusText}</div>
+        <div style="text-align:center;font-size:14px;color:var(--jade);font-weight:800;text-transform:uppercase;letter-spacing:0.4px;line-height:24px;padding:0 6px;">${plan.focusText}</div>
         <div style="display:grid;grid-template-columns:1fr 56px 56px;align-items:baseline;gap:6px;margin-top:12px;padding:0 14px;">
           <span style="font-size:14px;font-weight:700;color:var(--fg);text-align:left;">План на сегодня:</span>
           <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Сегодня</span>
@@ -1169,7 +1177,7 @@ function stats() {
         <button data-dfilter="all" class="ghost" style="flex:1;padding:7px 6px;font-size:13px;">Все слова (${allWords.length})</button>
       </div>
       <input type="search" id="dictSearch" placeholder="Поиск по иероглифу, пиньиню или переводу..." style="width:100%;padding:9px 12px;border-radius:12px;border:1.5px solid var(--border);font-size:14px;margin-bottom:10px;">
-      <div id="dictList" style="display:flex;flex-direction:column;gap:6px;max-height:360px;overflow-y:auto;"></div>
+    <div id="dictList" style="display:flex;flex-direction:column;gap:6px;max-height:210px;overflow-y:auto;"></div>
     </div>
 
     <div class="box" style="margin-top:14px;">
@@ -1297,27 +1305,27 @@ function settings() {
   app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
     <h2 style="margin-top:0;text-align:center;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;">НАСТРОЙКИ</h2>
 
-    <div class="box">
-      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">МОЙ УРОВЕНЬ HSK</h3>
-      <p style="color:var(--muted);font-size:13px;text-align:center;">Переключись на другой уровень или пройди входной тест заново:</p>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px;">
+    <div class="box" style="padding:14px;">
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">МОЙ УРОВЕНЬ HSK</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Переключись на другой уровень<br>или пройди входной тест заново:</p>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;">
         <button data-set-lvl="1" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '1' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 1</button>
         <button data-set-lvl="2" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '2' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 2</button>
         <button data-set-lvl="3" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '3' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 3</button>
         <button data-set-lvl="4" class="ghost" style="font-size:14px;padding:8px 4px;${selectedLevel === '4' ? 'border-color:var(--jade);background:#EDF5F0;font-weight:700;' : ''}">HSK 4</button>
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;">
-        <a href="#/placement" class="ghost" style="flex:1;text-align:center;font-size:13px;">Входной тест заново</a>
-        <button id="resetMoodBtn" class="ghost" style="flex:1;font-size:13px;">Сменить настроение</button>
+        <a href="#/placement" class="ghost" style="flex:1;text-align:center;font-size:13px;padding:9px 8px;">🎯 Входной тест заново</a>
+        <button id="resetMoodBtn" class="ghost" style="flex:1;font-size:13px;padding:9px 8px;">🎭 Сменить настроение</button>
       </div>
-      <p id="lvlSwitchStatus" style="margin-top:8px;font-size:13px;color:var(--jade);text-align:center;"></p>
+      <p id="lvlSwitchStatus" style="margin:8px 0 0;font-size:13px;color:var(--jade);text-align:center;"></p>
     </div>
 
-    <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЗВУК ОТВЕТОВ</h3>
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px;flex-wrap:wrap;">
+    <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 10px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЗВУК ОТВЕТОВ</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;">
         <div style="display:flex;align-items:center;gap:6px;">
-          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;">
+          <input type="checkbox" id="sfxToggle" ${sfxOn ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer;accent-color:var(--jade);">
           <div style="position:relative;display:inline-flex;align-items:center;">
             <select id="sfxThemeSelect" style="appearance:none;-webkit-appearance:none;background:#EDF5F0;border:1.5px solid var(--jade);border-radius:10px;padding:6px 26px 6px 10px;font-size:13px;font-weight:700;color:var(--fg);cursor:pointer;">
               <option value="jade" ${sfxTheme === 'jade' ? 'selected' : ''}>Нефритовая капля</option>
@@ -1334,40 +1342,45 @@ function settings() {
       </div>
     </div>
 
-    <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЕЖЕДНЕВНАЯ НАПОМИНАЛКА</h3>
-      <p style="color:var(--muted);font-size:13px;text-align:center;">Напомнит о занятиях, если план на сегодня ещё не выполнен.</p>
-      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-top:10px;flex-wrap:wrap;">
+    <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЕЖЕДНЕВНАЯ НАПОМИНАЛКА</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Напомнит о занятиях,<br>если план на сегодня ещё не выполнен.</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">
         <label style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:14px;cursor:pointer;">
-          <input type="checkbox" id="remToggle" ${remOn ? 'checked' : ''} style="width:18px;height:18px;">
+          <input type="checkbox" id="remToggle" ${remOn ? 'checked' : ''} style="width:18px;height:18px;accent-color:var(--jade);">
           Включить
         </label>
         <input type="time" id="remTime" value="${remTime}" style="padding:6px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;">
         <button id="testNotify" class="ghost" style="font-size:13px;padding:6px 10px;">Проверить</button>
       </div>
-      <p id="remStatus" style="margin-top:8px;font-size:13px;color:var(--jade);text-align:center;"></p>
+      <p id="remStatus" style="margin:8px 0 0;font-size:13px;color:var(--jade);text-align:center;"></p>
     </div>
 
-    <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">КАК ДОБАВИТЬ НА ГЛАВНЫЙ ЭКРАН</h3>
-      <div style="font-size:13px;color:var(--muted);line-height:1.55;text-align:center;">
+    <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 8px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">КАК ДОБАВИТЬ НА ГЛАВНЫЙ ЭКРАН</h3>
+      <div style="font-size:13px;color:var(--muted);line-height:1.5;text-align:center;">
         <p style="margin:0 0 4px;"><b>iPhone:</b> «Поделиться» → «На экран „Домой“»</p>
         <p style="margin:0;"><b>Android:</b> Меню (⋮) → «На главный экран»</p>
       </div>
     </div>
 
-    <div class="box" style="margin-top:14px;">
-      <h3 style="margin-top:0;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ПОДДЕРЖКА</h3>
-      <p style="color:var(--muted);font-size:13px;text-align:center;">Нашла опечатку в переводе, баг со звуком или есть идея для тренажёра?</p>
-      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin-top:8px;display:block;text-align:center;font-size:14px;">Написать в поддержку (@alinaLinka20)</a>
+    <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ПОДДЕРЖКА</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Нашла опечатку в переводе, баг со звуком<br>или есть идея для тренажёра?</p>
+      <a href="https://t.me" target="_blank" rel="noopener" class="cta" style="margin:0;display:block;text-align:center;font-size:14px;">Написать в поддержку (@alinaLinka20)</a>
     </div>
   </section>`;
+
+  const lvlStEl = app.querySelector('#lvlSwitchStatus');
+  lvlStEl.style.display = 'none';
+  const remStatus = app.querySelector('#remStatus');
+  remStatus.style.display = 'none';
 
   app.querySelectorAll('[data-set-lvl]').forEach(btn => {
     btn.onclick = async () => {
       const target = Number(btn.dataset.setLvl);
-      const stEl = app.querySelector('#lvlSwitchStatus');
-      await downloadLevelsUpTo(target, stEl);
+      lvlStEl.style.display = 'block';
+      await downloadLevelsUpTo(target, lvlStEl);
       localStorage.setItem('hsk_start_lvl', String(target));
       selectedLevel = String(target);
       selectedLesson = 0;
@@ -1395,8 +1408,8 @@ function settings() {
   app.querySelector('#testSfxOk').onclick = () => playFeedback(true);
   app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
 
-  const remStatus = app.querySelector('#remStatus');
   app.querySelector('#remToggle').onchange = async e => {
+    remStatus.style.display = 'block';
     if (e.target.checked) {
       if (!('Notification' in window)) {
         remStatus.textContent = 'Браузер не поддерживает уведомления (добавь сайт на экран «Домой»).';
@@ -1420,18 +1433,20 @@ function settings() {
   app.querySelector('#remTime').onchange = e => {
     localStorage.setItem('hsk_rem_time', e.target.value);
     if (localStorage.getItem('hsk_rem_on') === '1') {
+      remStatus.style.display = 'block';
       remStatus.textContent = 'Время напоминания обновлено: ' + e.target.value;
     }
   };
 
   app.querySelector('#testNotify').onclick = async () => {
+    remStatus.style.display = 'block';
     if (!('Notification' in window)) {
       remStatus.textContent = 'Уведомления недоступны в этом режиме.';
       return;
     }
     const perm = await Notification.requestPermission();
     if (perm === 'granted') {
-      new Notification('HSK 3.0 听力训练', {
+      new Notification('HSK 3.0 听力训练 🦆', {
         body: 'Пора размять слух! Загляни выполнить план на сегодня.',
         icon: './goose.jpg'
       });
