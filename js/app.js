@@ -244,6 +244,9 @@ function home() {
           Это тренажёр аудирования<br>
           по новому <b>HSK 3.0 (1–4 уровни)</b>
         </p>
+              <div style="margin:10px auto 0;padding:8px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:13px;line-height:1.4;color:var(--fg);">
+        💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить сайт под себя
+      </div>
         <div class="box" style="text-align:left;margin:14px 0 6px;padding:12px;">
           <div style="font-weight:700;font-size:15px;margin-bottom:10px;text-align:center;">Выбери свой текущий уровень:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
@@ -405,7 +408,37 @@ const filtered = getFilteredWords();
     });
     return;
   }
-
+  const examDateStr = localStorage.getItem('hsk_exam_date') || '';
+  let examBannerHtml = '';
+  if (examDateStr) {
+    const todayZero = new Date();
+    todayZero.setHours(0, 0, 0, 0);
+    const examZero = new Date(examDateStr + 'T00:00:00');
+    const daysLeft = Math.ceil((examZero - todayZero) / 86400000);
+    if (daysLeft > 0) {
+      const lvlPool = allWords.filter(w => String(w.level) === String(selectedLevel));
+      const remWords = lvlPool.filter(w => (srs[w.id]?.reps || 0) < 1).length;
+      const neededPerDay = Math.max(5, Math.ceil(remWords / daysLeft));
+      const moodFactor = curMood === 'tired' ? 0.65 : (curMood === 'high' ? 1.15 : 1);
+      const targetWords = Math.min(80, Math.max(8, Math.round(neededPerDay * moodFactor)));
+      const ratio = targetWords / 12;
+      plan.tasks.forEach(t => {
+        if (t.id === 'words') {
+          t.goal = targetWords;
+          t.sub = `Пройти ${targetWords} слов (темп к экзамену)`;
+        } else if (t.id === 'blitz') {
+          t.goal = Math.min(60, Math.max(10, Math.round(10 * ratio)));
+          t.sub = `Ответить на ${t.goal} слов на время`;
+        } else if (t.id === 'phrases') {
+          t.goal = Math.min(20, Math.max(4, Math.round(4 * ratio)));
+          t.sub = `Разобрать ${t.goal} фраз на слух`;
+        }
+      });
+      examBannerHtml = `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#FFF4E6;border:1px solid #F3D19E;color:#8A4B08;font-size:13px;font-weight:700;display:inline-block;">🎯 До экзамена: ${daysLeft} дн. · цель ~${targetWords} слов/день</div>`;
+    } else if (daysLeft === 0) {
+      examBannerHtml = `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);color:var(--jade);font-size:13px;font-weight:700;display:inline-block;">🎉 Экзамен уже сегодня! Удачи, ты справишься!</div>`;
+    }
+  }
 const taskButtons = plan.tasks.map((t, idx) => {
   const doneCount = d[t.id] || 0;
   const isDone = doneCount >= t.goal;
@@ -462,6 +495,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
     <h1 style="margin-bottom:4px;">HSK 3.0 听力训练</h1>
       ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin:0;">(Tīnglì xùnliàn)</div>'}
       <p style="color:var(--muted);opacity:0.95;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;line-height:24px;margin:12px 0;">ТРЕНИРОВКА АУДИРОВАНИЯ</p>
+      ${examBannerHtml || `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить сайт под себя</div>`}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
@@ -1384,6 +1418,7 @@ function settings() {
   const sfxOn = localStorage.getItem('hsk_sfx_off') !== '1';
   const sfxTheme = localStorage.getItem('hsk_sfx_theme') || 'jade';
   const morningResetOn = localStorage.getItem('hsk_morning_reset') === '1';
+  const examDateVal = localStorage.getItem('hsk_exam_date') || '';
   app.innerHTML = `<section style="max-width:440px;margin:0 auto;">
     <h2 style="margin-top:0;text-align:center;text-transform:uppercase;letter-spacing:0.6px;font-weight:800;">НАСТРОЙКИ</h2>
 
@@ -1432,6 +1467,16 @@ function settings() {
           Обновлять задание утром заново
         </label>
       </div>
+    </div>
+    <div class="box" style="margin-top:14px;padding:14px;">
+      <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ПОДГОТОВКА К ЭКЗАМЕНУ HSK</h3>
+      <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Укажи дату экзамена или запусти спринт —<br>программа сама рассчитает норму слов на день.</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;">
+        <input type="date" id="examDateInput" value="${examDateVal}" style="padding:7px 10px;border-radius:10px;border:1.5px solid var(--border);font-size:14px;font-weight:600;">
+        <button id="sprint30Btn" class="ghost" style="font-size:13px;padding:7px 10px;border-color:#F3D19E;background:#FFF4E6;color:#8A4B08;font-weight:700;">🔥 Спринт 30 дн.</button>
+        <button id="clearExamBtn" class="ghost" style="font-size:13px;padding:7px 10px;">Сброс</button>
+      </div>
+      <p id="examStatus" style="margin:8px 0 0;font-size:13px;color:var(--jade);text-align:center;font-weight:600;"></p>
     </div>
     <div class="box" style="margin-top:14px;padding:14px;">
       <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">ЕЖЕДНЕВНАЯ НАПОМИНАЛКА</h3>
@@ -1500,6 +1545,37 @@ function settings() {
   app.querySelector('#testSfxBad').onclick = () => playFeedback(false);
   app.querySelector('#morningResetToggle').onchange = e => {
     localStorage.setItem('hsk_morning_reset', e.target.checked ? '1' : '0');
+  };
+    const examStatusEl = app.querySelector('#examStatus');
+  if (!examDateVal) examStatusEl.style.display = 'none';
+  else examStatusEl.textContent = 'Дата экзамена сохранена: ' + examDateVal;
+
+  app.querySelector('#examDateInput').onchange = e => {
+    const val = e.target.value;
+    examStatusEl.style.display = 'block';
+    if (val) {
+      localStorage.setItem('hsk_exam_date', val);
+      examStatusEl.textContent = 'Цель установлена на ' + val + ' — план пересчитан!';
+    } else {
+      localStorage.removeItem('hsk_exam_date');
+      examStatusEl.textContent = 'Дата сброшена — включён обычный ритм.';
+    }
+  };
+
+  app.querySelector('#sprint30Btn').onclick = () => {
+    const d30 = new Date(Date.now() + 30 * 86400000);
+    const iso = `${d30.getFullYear()}-${String(d30.getMonth() + 1).padStart(2, '0')}-${String(d30.getDate()).padStart(2, '0')}`;
+    localStorage.setItem('hsk_exam_date', iso);
+    app.querySelector('#examDateInput').value = iso;
+    examStatusEl.style.display = 'block';
+    examStatusEl.textContent = '🔥 Спринт 30 дней запущен (экзамен ' + iso + ')!';
+  };
+
+  app.querySelector('#clearExamBtn').onclick = () => {
+    localStorage.removeItem('hsk_exam_date');
+    app.querySelector('#examDateInput').value = '';
+    examStatusEl.style.display = 'block';
+    examStatusEl.textContent = 'Включён обычный ритм подготовки.';
   };
   app.querySelector('#remToggle').onchange = async e => {
     remStatus.style.display = 'block';
