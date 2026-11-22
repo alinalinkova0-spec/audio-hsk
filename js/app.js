@@ -61,11 +61,34 @@ function getInstallBoxHtml() {
 function bindInstallActions(root) {
   root.querySelectorAll('.copy-app-link-btn').forEach(btn => {
     btn.onclick = () => {
-      const url = location.origin + location.pathname;
-      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url);
-      btn.textContent = '✅ Ссылка скопирована! Открой в Safari / Chrome';
+      const url = location.href.split('#')[0].split('?')[0];
+      let copied = false;
+      try {
+        const ta = document.createElement('textarea');
+        ta.value = url;
+        ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed';
+        ta.style.left = '-9999px';
+        document.body.appendChild(ta);
+        ta.select();
+        ta.setSelectionRange(0, 99999);
+        copied = document.execCommand('copy');
+        document.body.removeChild(ta);
+      } catch (e) {}
+      if (!copied && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).catch(() => {});
+      }
+      btn.textContent = 'Ссылка скопирована! Вставь её в Chrome или Safari';
+      if (!btn.nextElementSibling || !btn.nextElementSibling.classList.contains('raw-app-url')) {
+        const box = document.createElement('div');
+        box.className = 'raw-app-url';
+        box.style.cssText = 'margin-top:8px;padding:8px 10px;border-radius:8px;background:#fff;border:1px solid #F3D19E;font-size:13px;font-weight:600;color:#8A4B08;word-break:break-all;user-select:all;text-align:center;';
+        box.textContent = url;
+        btn.after(box);
+      }
     };
   });
+
   root.querySelectorAll('.pwa-install-btn').forEach(btn => {
     btn.onclick = async () => {
       if (deferredInstallPrompt) {
