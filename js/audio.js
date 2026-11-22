@@ -354,7 +354,7 @@ export function playFeedback(ok) {
       return;
     }
 
-    if (theme === 'bell') {
+      if (theme === 'bell') {
       if (ok) {
         sfxBusyUntil = now + 0.48;
         [587.33, 880.0].forEach((freq, i) => {
@@ -371,20 +371,20 @@ export function playFeedback(ok) {
           osc.stop(now + 0.48);
         });
       } else {
-        sfxBusyUntil = now + 0.37;
-        [329.63, 246.94].forEach((freq, i) => {
-          const t = now + i * 0.11;
+        sfxBusyUntil = now + 0.55;
+        [196.0, 277.18].forEach((freq, i) => {
           const osc = sfxCtx.createOscillator();
           const gain = sfxCtx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.setValueAtTime(freq, t);
-          gain.gain.setValueAtTime(0.0008, t);
-          gain.gain.exponentialRampToValueAtTime(0.072, t + 0.012);
-          gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.34);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, now);
+          osc.frequency.exponentialRampToValueAtTime(freq * 0.94, now + 0.5);
+          gain.gain.setValueAtTime(0.0008, now);
+          gain.gain.exponentialRampToValueAtTime(i === 0 ? 0.085 : 0.03, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.52);
           osc.connect(gain);
           gain.connect(sfxCtx.destination);
-          osc.start(t);
-          osc.stop(t + 0.36);
+          osc.start(now);
+          osc.stop(now + 0.55);
         });
       }
       return;
@@ -408,21 +408,21 @@ export function playFeedback(ok) {
         osc.stop(t + 0.2);
       });
     } else {
-      sfxBusyUntil = now + 0.17;
-      const notes = [329.63, 246.94];
+      sfxBusyUntil = now + 0.18;
+      const notes = [392.0, 293.66];
       notes.forEach((freq, i) => {
-        const t = now + i * 0.07;
+        const t = now + i * 0.065;
         const osc = sfxCtx.createOscillator();
         const gain = sfxCtx.createGain();
-        osc.type = 'triangle';
+        osc.type = 'sine';
         osc.frequency.setValueAtTime(freq, t);
         gain.gain.setValueAtTime(0.0008, t);
-        gain.gain.exponentialRampToValueAtTime(0.055, t + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.065, t + 0.008);
+        gain.gain.exponentialRampToValueAtTime(0.0005, t + 0.14);
         osc.connect(gain);
         gain.connect(sfxCtx.destination);
         osc.start(t);
-        osc.stop(t + 0.16);
+        osc.stop(t + 0.15);
       });
     }
   } catch {}
