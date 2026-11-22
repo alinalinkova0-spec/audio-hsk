@@ -356,3 +356,16 @@ main > * {
 .hero {
   padding: 12px 0;
 }
+/* Единый формат для всех гусей */
+img[src*="goose"]:not([alt*="Успешно пройден"]) {
+  width: 220px !important;
+  height: 220px !important;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  mix-blend-mode: multiply;
+  display: block;
+  margin: 0 auto;
+  pointer-events: none;
+  user-select: none;
+}
