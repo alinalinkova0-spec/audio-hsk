@@ -245,7 +245,7 @@ function home() {
           по новому <b>HSK 3.0 (1–4 уровни)</b>
         </p>
               <div style="margin:10px auto 0;padding:8px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:13px;line-height:1.4;color:var(--fg);">
-        💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить сайт под себя
+        💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажер под себя
       </div>
         <div class="box" style="text-align:left;margin:14px 0 6px;padding:12px;">
           <div style="font-weight:700;font-size:15px;margin-bottom:10px;text-align:center;">Выбери свой текущий уровень:</div>
@@ -495,7 +495,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
     <h1 style="margin-bottom:4px;">HSK 3.0 听力训练</h1>
       ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin:0;">(Tīnglì xùnliàn)</div>'}
       <p style="color:var(--muted);opacity:0.95;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;line-height:24px;margin:12px 0;">ТРЕНИРОВКА АУДИРОВАНИЯ</p>
-      ${examBannerHtml || `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить сайт под себя</div>`}
+      ${examBannerHtml || `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажер под себя</div>`}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
