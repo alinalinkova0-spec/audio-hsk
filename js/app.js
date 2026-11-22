@@ -573,7 +573,6 @@ const taskButtons = plan.tasks.map((t, idx) => {
       </div>
       <div style="color:var(--muted);opacity:0.95;font-size:13px;font-weight:700;letter-spacing:0.4px;margin:2px 0 6px;line-height:1.35;">
         <div style="text-transform:uppercase;">${curMood === 'tired' ? 'АНТИСТРЕСС-РЕЖИМ' : (curMood === 'high' ? 'УСИЛЕННЫЙ ТЕМП' : 'ОБЫЧНЫЙ РИТМ')}</div>
-        <div style="font-size:12px;font-weight:600;text-transform:none;">Закрепляем знакомое</div>
       </div>
       ${examBannerHtml || (localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`)}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
@@ -588,8 +587,8 @@ const taskButtons = plan.tasks.map((t, idx) => {
         <select id="lesSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">${lessonOptions}</select>
       </div>
       ${levelUpBanner}
-      <div style="width:100%;max-width:420px;margin:20px auto 0;display:flex;flex-direction:column;gap:8px;">
-        <div style="text-align:center;font-size:14px;color:var(--jade);font-weight:800;text-transform:uppercase;letter-spacing:0.4px;line-height:24px;padding:0 6px;">${plan.focusText}</div>
+      <div style="width:100%;max-width:420px;margin:10px auto 0;display:flex;flex-direction:column;gap:8px;">
+      <div style="text-align:center;font-size:13px;color:var(--jade);font-weight:700;letter-spacing:0.3px;">Фокус дня: закрепляем знакомое</div>
         <div style="display:grid;grid-template-columns:1fr 56px 56px;align-items:baseline;gap:6px;margin-top:12px;padding:0 14px;">
           <span style="font-size:14px;font-weight:700;color:var(--fg);text-align:left;">План на сегодня:</span>
           <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Сегодня</span>
