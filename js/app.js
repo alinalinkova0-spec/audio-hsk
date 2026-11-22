@@ -319,7 +319,7 @@ const filtered = getFilteredWords();
    const MOODS = Array.of(
     {
       id: 'high',
-      img: './goose_mood.jpg',
+      img: './goose_mood_high.jpg',
       ru: 'Готова изучать китайский язык!',
       zh: '我准备好学习汉语了！',
       py: 'Wǒ zhǔnbèi hǎo xuéxí Hànyǔ le!',
@@ -327,7 +327,7 @@ const filtered = getFilteredWords();
     },
     {
       id: 'normal',
-      img: './goose_mood.jpg',
+      img: './goose_mood_normal.jpg',
       ru: 'Могу уделить немного времени',
       zh: '我能抽出一点儿时间',
       py: 'Wǒ néng chōuchū yīdiǎnr shíjiān',
@@ -335,7 +335,7 @@ const filtered = getFilteredWords();
     },
     {
       id: 'tired',
-      img: './goose_night.jpg',
+      img: './goose_mood_tired.jpg',
       ru: 'Совсем без сил',
       zh: '我好累啊',
       py: 'Wǒ hǎo lèi a',
@@ -717,7 +717,14 @@ function startMode(mode) {
       }
       const totalLearnedNow = Object.values(srs).filter(s => s.reps >= 1).length;
       const totalConfidentNow = Object.values(srs).filter(s => s.reps >= 3).length;
-      app.innerHTML = `<section class="hero"><h1>Задание выполнено! ✓</h1>
+  const lesList = ALL_WORDS.filter(w => String(w.level) === String(selectedLevel) && Number(w.lesson) === Number(selectedLesson));
+  const lesDone = lesList.length > 0 && lesList.every(w => (srs[w.id]?.reps || 0) >= 1);
+  const lesBadgeKey = `hsk_les_badge_${selectedLevel}_${selectedLesson}`;
+  const showLessonGoose = lesDone && !localStorage.getItem(lesBadgeKey);
+  if (showLessonGoose) localStorage.setItem(lesBadgeKey, '1');
+
+  app.innerHTML = `<section class="hero">
+    ${showLessonGoose ? `<div style="max-width:230px;margin:0 auto 10px;"><img src="./goose_lesson_done.jpg" alt="Урок пройден!" style="width:100%;height:auto;mix-blend-mode:multiply;display:block;"></div><h1 style="margin-bottom:6px;">Урок пройден! 🏆</h1>` : `<h1>Задание выполнено! ✓</h1>`}
         <div class="box" style="text-align:left;max-width:340px;margin:12px auto;font-size:14px;line-height:1.7;">
           <div>✅ Выполнено упражнений: <b>${steps.length}</b></div>
           <div>📚 Всего слов в твоей памяти: <b>${totalLearnedNow}</b></div>
