@@ -244,9 +244,7 @@ function home() {
           Это тренажёр аудирования<br>
           по новому <b>HSK 3.0 (1–6 уровни)</b>
         </p>
-              <div style="margin:10px auto 0;padding:8px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:13px;line-height:1.4;color:var(--fg);">
-        💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажер под себя
-      </div>
+        ${localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:10px auto 0;padding:8px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:13px;line-height:1.4;color:var(--fg);">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`}
         <div class="box" style="text-align:left;margin:14px 0 6px;padding:12px;">
           <div style="font-weight:700;font-size:15px;margin-bottom:10px;text-align:center;">Выбери свой текущий уровень:</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
@@ -260,11 +258,7 @@ function home() {
 <button class="cta" id="startPlacementBtn" style="width:100%;border:none;cursor:pointer;margin-top:10px;padding:13px;font-size:16px;"> Я не знаю (пройти тест)</button>
         </div>
         <p id="welcomeLoadStatus" style="font-size:13px;color:var(--accent);font-weight:600;margin:0;"></p>
-        <div style="margin:12px 0 8px;font-size:13px;color:var(--muted);text-align:center;line-height:1.5;">
-          <div style="margin-bottom:3px;">💡 <b>Этот сайт можно добавить<br>на главный экран телефона для быстрого доступа:</b></div>
-          <div><b>На iPhone:</b> «Поделиться» → «На экран Домой»</div>
-          <div><b>На Android:</b> «⋮» → «Добавить на гл. экран»</div>
-        </div>
+      <p style="margin:12px 0 6px;font-size:12px;color:var(--muted);">📱 Можно установить на главный экран телефона как приложение</p>
 <div style="width:100%;max-width:270px;margin:-14px auto 0;text-align:center;">
           <img src="./goose_welcome.jpg" alt="Приветственный гусь" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
         </div>
@@ -508,7 +502,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
     <h1 style="margin-bottom:4px;">HSK 3.0 听力训练</h1>
       ${knowsAll(['听力', '训练']) ? '' : '<div style="color:var(--jade);font-weight:500;font-size:14px;margin:0;">(Tīnglì xùnliàn)</div>'}
       <p style="color:var(--muted);opacity:0.95;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px;line-height:24px;margin:12px 0;">ТРЕНИРОВКА АУДИРОВАНИЯ</p>
-      ${examBannerHtml || `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажер под себя</div>`}
+      ${examBannerHtml || (localStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);font-size:12px;line-height:1.4;color:var(--fg);display:inline-block;">💡 Перед началом загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;text-decoration:underline;">Настройки</a> — там можно настроить тренажёр под себя</div>`)}
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:4px auto 6px;">
      <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
        <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
@@ -1431,6 +1425,7 @@ function stats() {
   };
 }
 function settings() {
+    localStorage.setItem('hsk_settings_visited', '1');
   const remOn = localStorage.getItem('hsk_rem_on') === '1';
   const remTime = localStorage.getItem('hsk_rem_time') || '19:00';
   const sfxOn = localStorage.getItem('hsk_sfx_off') !== '1';
