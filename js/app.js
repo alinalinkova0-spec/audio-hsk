@@ -456,7 +456,10 @@ const taskButtons = plan.tasks.map((t, idx) => {
       <div style="width:100%;max-width:260px;margin:6px auto 0;text-align:center;overflow:hidden;">
         <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;margin-top:-18px;clip-path:inset(0 8% 0 0);mix-blend-mode:multiply;pointer-events:none;user-select:none;">
       </div>
-    </section>`;
+    <div style="max-width:340px;margin:12px auto 0;text-align:center;">
+      <button id="shareAppBtn" class="ghost" style="width:100%;padding:11px 16px;font-size:14px;font-weight:700;border-color:var(--jade);color:var(--jade);background:#F4F9F6;">🦆 Поделиться тренажёром с другом</button>
+    </div>
+  </section>`;
 
   app.querySelector('#lvlSel').onchange = e => {
     selectedLevel = e.target.value;
@@ -471,7 +474,25 @@ const taskButtons = plan.tasks.map((t, idx) => {
     localStorage.setItem('hsk_les', String(selectedLesson));
     history.replaceState(null, '', '#/');
   };
-
+  const shareBtn = app.querySelector('#shareAppBtn');
+  if (shareBtn) {
+    shareBtn.onclick = async () => {
+      const shareUrl = location.origin + location.pathname;
+      const shareData = {
+        title: 'HSK 3.0 听力训练',
+        text: 'Тренирую свой китайский на слух в тренажёре HSK 3.0 с гусем 🦆',
+        url: shareUrl
+      };
+      if (navigator.share) {
+        try { await navigator.share(shareData); } catch {}
+      } else if (navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        const orig = shareBtn.textContent;
+        shareBtn.textContent = '✓ Ссылка скопирована в буфер!';
+        setTimeout(() => { shareBtn.textContent = orig; }, 2200);
+      }
+    };
+  }
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
       location.hash = '#/' + btn.dataset.mode;
