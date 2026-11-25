@@ -1,4 +1,4 @@
-import { safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, normalizeGooseCode, generateGooseCode } from '../storage.js?v=7';
+import { safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, normalizeGooseCode, generateGooseCode } from '../storage.js?v=8';
 import { playFeedback } from '../audio.js?v=13';
 import { loadSRS } from '../srs.js?v=2';
 import { renderFeedbackBox } from '../feedback.js?v=1';
@@ -33,35 +33,32 @@ export function renderSettings(app, ctx) {
     const morningResetOn = safeStorage.getItem('hsk_morning_reset') !== '0';
     const examDateVal = safeStorage.getItem('hsk_exam_date') || '';
     const showProgressChecked = safeStorage.getItem('hsk_show_progress') !== '0' ? 'checked' : '';
-
     app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:10px 16px 16px;">
       <h1 style="margin:0 0 4px;font-size:28px;">Настройки</h1>
       <p style="font-size:15px;line-height:1.4;color:var(--muted);margin:0 0 12px;">Настрой всё под себя: свой уровень, цель по экзамену, напоминания и оформление</p>
-
-            <div class="box" style="padding:14px;margin-bottom:10px;text-align:left;">
+      <div class="box" style="padding:14px;margin-bottom:10px;text-align:left;">
         <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">🦆 Никнейм и Гусиный код</h3>
         <p style="margin:0 0 12px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">
-          Никакой почты и паролей — введи один и тот же <b>гусиный код</b> на ноутбуке и телефоне, чтобы объединить слова и уровень
+          Твой гусиный код закреплён за этим устройством — скопируй его и вставь на втором устройстве, чтобы объединить слова и уровень
         </p>
         <div style="display:flex;flex-direction:column;gap:8px;">
           <div>
-            <label for="settingsNameInput" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Никнейм (для гуся)</label>
-            <input id="settingsNameInput" type="text" placeholder="Например: Агент Гусь" value="${getSavedName()}" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);font-size:15px;background:#fff;color:var(--fg);">
+            <label for="settingsNameInput" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Никнейм (для тебя)</label>
+            <input id="settingsNameInput" type="text" placeholder="Например: Мистер Гусь" value="${getSavedName()}" style="width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid var(--border);font-size:15px;background:#fff;color:var(--fg);">
           </div>
           <div>
-            <label for="settingsEmailInput" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">Твой гусиный код синхронизации</label>
+            <label for="settingsEmailInput" style="display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;">🔒 Твой гусиный код (только копирование)</label>
             <div style="display:flex;gap:6px;">
-              <input id="settingsEmailInput" type="text" placeholder="GOOSE-007" value="${activeCode}" style="flex:1;min-width:0;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1.5px solid var(--jade);font-size:15px;font-weight:800;letter-spacing:0.5px;background:#EDF5F0;color:var(--fg);text-transform:uppercase;">
-              <button id="copyGooseCodeBtn" type="button" class="ghost" style="padding:0 12px;font-size:13px;font-weight:700;white-space:nowrap;">📋 Копия</button>
+              <input id="settingsEmailInput" type="text" readonly value="${activeCode}" style="flex:1;min-width:0;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1.5px solid var(--jade);font-size:15px;font-weight:800;letter-spacing:0.5px;background:#EDF5F0;color:var(--fg);text-transform:uppercase;cursor:default;">
+              <button id="copyGooseCodeBtn" type="button" class="ghost" style="padding:0 12px;font-size:13px;font-weight:700;white-space:nowrap;">Скопировать</button>
             </div>
           </div>
-          <button id="settingsEmailSaveBtn" class="cta" style="width:100%;padding:11px 14px;font-size:14px;border:none;cursor:pointer;margin-top:2px;">Подключить код и объединить</button>
+          <button id="settingsEmailSaveBtn" class="cta" style="width:100%;padding:11px 14px;font-size:14px;border:none;cursor:pointer;margin-top:2px;">Сохранить никнейм</button>
         </div>
         <div id="settingsEmailStatus" style="font-size:13px;color:var(--jade);font-weight:600;margin-top:8px;text-align:center;">
           ${safeStorage.getItem('hsk_last_cloud_sync') ? `Синхронизировано в ${safeStorage.getItem('hsk_last_cloud_sync')} ✓` : ''}
         </div>
       </div>
-
       <div class="box" style="padding:14px;">
         <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">Твой уровень и темп</h3>
         <p style="margin:0 0 10px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">Переключи уровень HSK 3.0 вручную, пройди короткий тест или смени настроение на сегодня</p>
