@@ -59,7 +59,7 @@
             '<div id="crashStatus" style="font-size:12px;font-weight:600;margin-top:6px;text-align:center;"></div>' +
           '</div>' +
           '<button onclick="(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}):Promise.resolve()).then(function(){return window.caches?caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}):null}).finally(function(){location.reload()})" class="ghost" style="width:100%;padding:10px;">Обновить страницу</button>' +
-          '<a href="https://github.io" class="cta" style="display:block;width:100%;box-sizing:border-box;padding:11px 10px;margin-top:8px;text-decoration:none;font-size:14px;">🦆 Открыть запасное зеркало сайта</a>' +
+          '<a href="https://alinalinkova0-spec.github.io/audio-hsk/" class="cta" style="display:block;width:100%;box-sizing:border-box;padding:11px 10px;margin-top:8px;text-decoration:none;font-size:14px;">🦆 Открыть запасное зеркало сайта</a>' +
           (details ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);opacity:0.75;word-break:break-word;">' + String(details).replace(/</g, '&lt;') + '</div>' : '') +
         '</section>';
 
