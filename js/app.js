@@ -1,6 +1,6 @@
-import { storageReady, safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, pullCloudState } from './storage.js?v=7';
-import { renderSettings } from './screens/settings.js?v=6';
-import { renderOnboarding } from './screens/onboarding.js?v=2';
+import { storageReady, safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, pullCloudState } from './storage.js?v=8';
+import { renderSettings } from './screens/settings.js?v=8';
+import { renderOnboarding } from './screens/onboarding.js?v=13';
 import { renderStats } from './screens/stats.js?v=1';
 import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { renderLiveChinese } from './screens/live.js?v=1';
