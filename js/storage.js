@@ -473,3 +473,45 @@ export function logoutEmail() {
   setLongCookie('hsk_uid_name', '');
 
 }
+export async function findProfilesByNickname(nickname) {
+  const clean = String(nickname || '').trim();
+  if (!clean) return { ok: false, items: [] };
+
+  try {
+    const query = `${SB_URL}/rest/v1/user_profiles?state->>hsk_user_name=ilike.*${encodeURIComponent(clean)}*&select=email,state,updated_at&limit=10`;
+    const res = await fetchWithTimeout(query, {
+      method: 'GET',
+      headers: { 'apikey': SB_KEY }
+    }, 4500);
+
+    if (!res.ok) return { ok: false, items: [] };
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return { ok: true, items: [] };
+
+    const items = rows
+      .filter(r => r && r.email && String(r.email).toUpperCase().startsWith('GOOSE-'))
+      .map(r => {
+        const st = r.state || {};
+        const name = st.hsk_user_name || 'Без имени';
+        const lvl = st.hsk_lvl || st.hsk_start_lvl || '1';
+        let wordsCount = 0;
+        try {
+          wordsCount = Object.keys(JSON.parse(st.srs_hsk4_v1 || '{}')).length;
+        } catch {}
+        const dateStr = r.updated_at
+          ? new Date(r.updated_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })
+          : '';
+        return {
+          code: String(r.email).toUpperCase(),
+          name,
+          lvl,
+          wordsCount,
+          dateStr
+        };
+      });
+
+    return { ok: true, items };
+  } catch (e) {
+    return { ok: false, items: [] };
+  }
+}
