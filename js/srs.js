@@ -1,11 +1,12 @@
+import { safeStorage } from './storage.js';
 const KEY = 'srs_hsk4_v1';
 
 export function loadSRS() {
-  try { return JSON.parse(localStorage.getItem(KEY) || '{}'); }
+  try { return JSON.parse(safeStorage.getItem(KEY) || '{}'); }
   catch { return {}; }
 }
 export function saveSRS(s) {
-  localStorage.setItem(KEY, JSON.stringify(s));
+  safeStorage.setItem(KEY, JSON.stringify(s));
 }
 export function review(state, id, grade) {
   const s = state[id] || { ef: 2.5, interval: 0, reps: 0, due: 0 };

@@ -1,4 +1,5 @@
-import { speak, speakDialog, mountAudioControl } from '../audio.js?v=5';
+import { safeStorage } from '../storage.js?v=6';
+import { speak, speakDialog, mountAudioControl } from '../audio.js?v=13';
 import { review, saveSRS } from '../srs.js';
 
 function makeClickableHanzi(text) {
@@ -130,8 +131,8 @@ export function renderPhraseChoice(root, s, allSentences, srsState, onDone) {
   }
 }
 export function renderStoryCard(root, storiesList, progressMap, srsState, onDone) {
-  const userLvl = Number(localStorage.getItem('hsk_lvl') || localStorage.getItem('hsk_start_lvl') || 1);
-  let curKind = localStorage.getItem('hsk_story_kind') || 'all';
+  const userLvl = Number(safeStorage.getItem('hsk_lvl') || safeStorage.getItem('hsk_start_lvl') || 1);
+  let curKind = safeStorage.getItem('hsk_story_kind') || 'all';
   if (!Array.of('all', 'dialogue', 'text').includes(curKind)) curKind = 'all';
 
   function render() {
@@ -181,7 +182,7 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
 
     root.querySelector('#storyKind').onchange = e => {
       curKind = e.target.value;
-      localStorage.setItem('hsk_story_kind', curKind);
+      safeStorage.setItem('hsk_story_kind', curKind);
       render();
     };
 
@@ -204,13 +205,15 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
           const rightBtn = Array.from(answerEl.children).at(item.correct);
           if (rightBtn) rightBtn.classList.add('ok');
         }
-
-        const linesHtml = item.lines.map(l => {
+               const linesHtml = item.lines.map((l, lineIdx) => {
           const prefix = item.kind === 'dialogue' ? `<b>${l.speaker}:</b> ` : '';
-          return `<div style="margin-bottom:8px;">
-            <div style="font-size:18px;font-weight:600;">${prefix}${makeClickableHanzi(l.hanzi)}</div>
-            <div style="font-size:14px;color:#1E7E5E;">${l.pinyin}</div>
-            <div style="font-size:14px;color:#4B5563;">${l.ru}</div>
+          return `<div style="margin-bottom:10px;display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:18px;font-weight:600;">${prefix}${makeClickableHanzi(l.hanzi)}</div>
+              <div style="font-size:14px;color:#1E7E5E;">${l.pinyin}</div>
+              <div style="font-size:14px;color:#4B5563;">${l.ru}</div>
+            </div>
+            <button type="button" class="ghost say-line-btn" data-line-idx="${lineIdx}" title="Прослушать фразу" style="padding:5px 9px;font-size:14px;flex-shrink:0;">🔊</button>
           </div>`;
         }).join('');
 
@@ -223,7 +226,12 @@ export function renderStoryCard(root, storiesList, progressMap, srsState, onDone
           </div>
         `;
         bindHanziTaps(transcriptBox);
-
+        transcriptBox.querySelectorAll('.say-line-btn').forEach(btnLine => {
+          btnLine.onclick = () => {
+            const lineObj = item.lines[Number(btnLine.dataset.lineIdx)];
+            if (lineObj) speak(lineObj.hanzi, { rate: 0.9, instant: true });
+          };
+        });
         reveal.querySelector('#again').onclick = () => audioCtrl.replay();
         reveal.querySelector('#nextStory').onclick = onDone;
       };

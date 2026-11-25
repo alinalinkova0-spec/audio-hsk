@@ -1,10 +1,10 @@
 {
-  "name": "HSK 3.0 听力训练",
-  "short_name": "HSK 3.0 听力训练",
+"name": "HSK на слух — Аудирование китайского",
+"short_name": "HSK на слух",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0f1115",
-  "theme_color": "#0f1115",
+  "background_color": "#FAF6EE",
+  "theme_color": "#FAF6EE",
   "icons": [
     {
       "src": "./goose_icon.jpg",

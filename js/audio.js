@@ -1,3 +1,4 @@
+import { safeStorage } from './storage.js';
 let zhVoices = [];
 let femaleVoice = null;
 let maleVoice = null;
@@ -8,7 +9,20 @@ let playSessionId = 0;
 let isPaused = false;
 let isPlaying = false;
 let activePlayBtn = null;
-const missingNativeCache = new Set();
+let pendingAutoSpeak = null;
+
+function unlockSpeechOnGesture() {
+  if (!pendingAutoSpeak) return;
+  const task = pendingAutoSpeak;
+  pendingAutoSpeak = null;
+  task();
+}
+
+if (typeof window !== 'undefined') {
+  ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => {
+    window.addEventListener(evt, unlockSpeechOnGesture, { passive: true });
+  });
+}
 
 const PLAY_SVG = '<svg width="36" height="36" viewBox="0 0 24 24" fill="#FFFDF9" style="margin-left:4px;"><path d="M8 5v14l11-7z"/></svg>';
 const PAUSE_SVG = '<svg width="34" height="34" viewBox="0 0 24 24" fill="#FFFDF9"><path d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>';
@@ -20,6 +34,7 @@ function syncPlayBtn() {
 
 export function stopAudio() {
   playSessionId += 1;
+  pendingAutoSpeak = null;
   isPaused = false;
   isPlaying = false;
   if (dialogTimer) {
@@ -127,6 +142,12 @@ function speakTTS(text, rate = 1, speaker = null, sid = playSessionId) {
   isPaused = false;
   syncPlayBtn();
 
+  let started = false;
+  u.onstart = () => {
+    started = true;
+    pendingAutoSpeak = null;
+  };
+
   u.onend = () => {
     if (sid !== playSessionId) return;
     isPlaying = false;
@@ -139,52 +160,31 @@ function speakTTS(text, rate = 1, speaker = null, sid = playSessionId) {
     isPaused = false;
     syncPlayBtn();
   };
-  speechSynthesis.speak(u);
+
+  try {
+    speechSynthesis.resume();
+    speechSynthesis.speak(u);
+  } catch {}
+
+  // Если через 350мс мобильный браузер не начал говорить (блокировка автозапуска),
+  // ставим в очередь на первое касание экрана
+  setTimeout(() => {
+    if (sid === playSessionId && !started && !speechSynthesis.speaking) {
+      isPlaying = false;
+      syncPlayBtn();
+      pendingAutoSpeak = () => {
+        if (sid === playSessionId) speakTTS(text, rate, speaker, sid);
+      };
+    }
+  }, 350);
 }
+
 export function speak(text, { rate = 1 } = {}) {
   const clean = String(text || '').trim();
   if (!clean) return;
 
   stopAudio();
   const sid = playSessionId;
-
-  const isShortWord = [...clean].length <= 4 && !/[，。！？、；：]/.test(clean);
-
-  if (isShortWord && !missingNativeCache.has(clean)) {
-    const host = 'raw.' + 'githubusercontent.com';
-    const mp3Url = `https://${host}/hugolpz/audio-cmn/master/64k/cmn-${encodeURIComponent(clean)}.mp3`;
-    const audio = new Audio(mp3Url);
-    audio.playbackRate = Math.min(1.5, Math.max(0.65, +rate.toFixed(2)));
-    currentAudio = audio;
-    isPlaying = true;
-    isPaused = false;
-    syncPlayBtn();
-
-    audio.onended = () => {
-      if (sid !== playSessionId) return;
-      currentAudio = null;
-      isPlaying = false;
-      isPaused = false;
-      syncPlayBtn();
-    };
-
-    audio.onerror = () => {
-      missingNativeCache.add(clean);
-      if (sid === playSessionId && currentAudio === audio) {
-        currentAudio = null;
-        speakTTS(clean, rate, null, sid);
-      }
-    };
-
-    audio.play().catch(() => {
-      if (sid === playSessionId && currentAudio === audio) {
-        currentAudio = null;
-        speakTTS(clean, rate, null, sid);
-      }
-    });
-    return;
-  }
-
   speakTTS(clean, rate, null, sid);
 }
 
@@ -245,7 +245,7 @@ export function speakDialog(lines, { rate = 1 } = {}) {
 
 export function mountAudioControl(container, onPlayFn, { autoPlay = true } = {}) {
   const SPEEDS = [0.8, 1.0, 1.2];
-  let rate = Number(localStorage.getItem('hsk_speed'));
+  let rate = Number(safeStorage.getItem('hsk_speed'));
   if (!SPEEDS.includes(rate)) rate = 1.0;
 
   container.innerHTML = `
@@ -267,7 +267,7 @@ export function mountAudioControl(container, onPlayFn, { autoPlay = true } = {})
 
   function setSpeed(newRate, shouldPlay = true) {
     rate = newRate;
-    localStorage.setItem('hsk_speed', String(rate));
+    safeStorage.setItem('hsk_speed', String(rate));
     const idx = SPEEDS.indexOf(rate);
     speedThumb.style.transform = `translateY(${idx * 34}px)`;
     speedBtns.forEach(b => {
@@ -323,8 +323,8 @@ let sfxCtx = null;
 let sfxBusyUntil = 0;
 
 export function playFeedback(ok) {
-  if (localStorage.getItem('hsk_sfx_off') === '1') return;
-  const theme = localStorage.getItem('hsk_sfx_theme') || 'jade';
+  if (safeStorage.getItem('hsk_sfx_off') === '1') return;
+  const theme = safeStorage.getItem('hsk_sfx_theme') || 'jade';
   try {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return;
@@ -372,14 +372,14 @@ export function playFeedback(ok) {
         });
       } else {
         sfxBusyUntil = now + 0.55;
-        [196.0, 277.18].forEach((freq, i) => {
+[392.0, 311.13].forEach((freq, i) => {
           const osc = sfxCtx.createOscillator();
           const gain = sfxCtx.createGain();
           osc.type = 'sine';
           osc.frequency.setValueAtTime(freq, now);
           osc.frequency.exponentialRampToValueAtTime(freq * 0.94, now + 0.5);
           gain.gain.setValueAtTime(0.0008, now);
-          gain.gain.exponentialRampToValueAtTime(i === 0 ? 0.085 : 0.03, now + 0.015);
+          gain.gain.exponentialRampToValueAtTime(i === 0 ? 0.14 : 0.07, now + 0.015);
           gain.gain.exponentialRampToValueAtTime(0.0005, now + 0.52);
           osc.connect(gain);
           gain.connect(sfxCtx.destination);

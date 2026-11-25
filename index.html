@@ -2,17 +2,33 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8">
+  <script>if (location.pathname === '/audio-hsk') location.replace('/audio-hsk/' + location.search + location.hash);</script>
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+  <meta name="yandex-verification" content="5495d272f8fab495" />
+  <meta name="google-site-verification" content="VVzk7ijB3qOy7ltw5oOMViRfEHCpt4UXa1cTdk9KRag" />
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>HSK 3.0 听力训练</title>
-    <link rel="icon" type="image/jpeg" href="./goose_icon.jpg">
+  <title>HSK на слух — Тренажёр аудирования китайского языка (1–6 уровни)</title>
+  <meta name="description" content="Бесплатный онлайн-тренажёр аудирования по новому стандарту HSK 3.0: все 6 уровней, разбор тонов, диалоги, живой китайский и умное повторение.">
+  <meta name="keywords" content="HSK на слух, HSK 3.0, китайский язык аудирование, тренажер HSK, учить китайский на слух, HSK 1, HSK 2, тоны китайского">
+  <meta name="apple-mobile-web-app-title" content="HSK на слух">
+  <meta property="og:title" content="HSK на слух — Тренажёр аудирования">
+  <meta property="og:description" content="Тренируй китайский на слух: 1–6 уровни HSK 3.0, живые диалоги и разбор песен.">
+  <meta property="og:image" content="./js/geese/goose_welcome.jpg">
+  <meta property="og:type" content="website">
+  <link rel="icon" type="image/jpeg" href="./goose_icon.jpg">
   <link rel="apple-touch-icon" href="./goose_icon.jpg">
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0f1115">
+  <meta name="theme-color" content="#FAF6EE">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
   <header class="topbar">
-    <a class="logo" href="#/">HSK 3.0</a>
+       <a class="logo" href="#/" style="display:inline-flex;align-items:baseline;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(100% - 88px);">
+      <span style="color:var(--fg);">HSK 3.0</span>
+      <span id="headerTitleZh" title="Нажми, чтобы прослушать" style="color:var(--fg);font-size:15px;">听力 训练</span>
+      <span id="headerTitleHint" style="font-size:11px;font-weight:500;color:var(--jade);overflow:hidden;text-overflow:ellipsis;">(Tīnglì xùnliàn) · Аудирование</span>
+    </a>
     <details class="nav-dropdown" id="topMenu">
       <summary class="nav-toggle">Меню <span class="nav-arrow">▾</span></summary>
       <nav class="nav-list">
@@ -23,12 +39,85 @@
       </nav>
     </details>
   </header>
-  <main id="app"></main>
-<script type="module" src="js/app.js?v=60"></script>
+       <main id="app"></main>
   <script>
-  if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js');
-    }
+           window.__showAppError = function(details) {
+      var el = document.getElementById('app');
+      if (!el || el.dataset.hasError) return;
+      el.dataset.hasError = '1';
+      el.innerHTML =
+        '<section class="hero" style="max-width:420px;margin:0 auto;padding:18px 16px;text-align:center;">' +
+          '<div style="width:220px;max-width:75%;margin:0 auto 12px;border-radius:18px;overflow:hidden;">' +
+            '<img src="./js/geese/goose_error.jpg?v=2" alt="Гусь охотится на баги" style="width:100%;height:auto;display:block;mix-blend-mode:multiply;pointer-events:none;">' +
+          '</div>' +
+                    '<h2 style="margin:0 0 6px;font-size:22px;color:var(--fg);">出事了！</h2>' +
+          '<p style="margin:0 0 14px;font-size:14px;line-height:1.45;color:var(--muted);">Гусь уже вышел на охоту за багами! Ждите, скоро всё починим! 🦆</p>' +
+          '<div id="crashFeedbackSlot" class="box" style="padding:12px;margin:0 0 10px;text-align:left;">' +
+            '<div style="font-size:13px;font-weight:700;color:var(--fg);margin-bottom:6px;">Написать разработчику</div>' +
+            '<textarea id="crashText" rows="2" placeholder="Расскажи, что нажал перед ошибкой..." style="width:100%;box-sizing:border-box;padding:9px 10px;border-radius:10px;border:1px solid var(--border);font-size:14px;font-family:inherit;background:#fff;color:var(--fg);"></textarea>' +
+            '<button id="crashSendBtn" type="button" class="cta" style="width:100%;margin-top:8px;padding:10px;font-size:14px;border:none;cursor:pointer;">Отправить в поддержку</button>' +
+            '<div id="crashStatus" style="font-size:12px;font-weight:600;margin-top:6px;text-align:center;"></div>' +
+          '</div>' +
+          '<button onclick="(navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}):Promise.resolve()).then(function(){return window.caches?caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}):null}).finally(function(){location.reload()})" class="ghost" style="width:100%;padding:10px;">Обновить страницу</button>' +
+          '<a href="https://github.io" class="cta" style="display:block;width:100%;box-sizing:border-box;padding:11px 10px;margin-top:8px;text-decoration:none;font-size:14px;">🦆 Открыть запасное зеркало сайта</a>' +
+          (details ? '<div style="margin-top:10px;font-size:11px;color:var(--muted);opacity:0.75;word-break:break-word;">' + String(details).replace(/</g, '&lt;') + '</div>' : '') +
+        '</section>';
+
+      var sendBtn = document.getElementById('crashSendBtn');
+      if (sendBtn) {
+        sendBtn.onclick = function() {
+          var txt = (document.getElementById('crashText').value || '').trim();
+          var st = document.getElementById('crashStatus');
+          if (!txt) { st.style.color = '#B42318'; st.textContent = 'Напиши пару слов о проблеме'; return; }
+          sendBtn.disabled = true;
+          st.style.color = 'var(--jade)';
+          st.textContent = 'Отправляем...';
+          import('./js/feedback.js?v=2').then(function(m) {
+            return m.sendTelegramReport({ text: '🆘 С экрана ошибки:\n' + txt + '\n\nДетали: ' + (details || '') });
+          }).then(function(res) {
+            sendBtn.disabled = false;
+            st.style.color = res && res.ok ? 'var(--jade)' : '#B42318';
+            st.textContent = (res && res.message) || 'Отправлено ✓';
+            if (res && res.ok) document.getElementById('crashText').value = '';
+          }).catch(function() {
+            sendBtn.disabled = false;
+            st.style.color = '#B42318';
+            st.textContent = 'Не удалось отправить, попробуй обновить страницу';
+          });
+        };
+      }
+
+      import('./js/feedback.js?v=2').then(function(m) {
+        if (m.reportAutoCrash) m.reportAutoCrash(details);
+        if (m.renderFeedbackBox) {
+          m.renderFeedbackBox(document.getElementById('crashFeedbackSlot'), {
+            title: 'Расскажи, что нажал перед ошибкой',
+            placeholder: 'Например: нажал на карточку в HSK 2...'
+          });
+        }
+      }).catch(function() {});
+    };
+    window.addEventListener('error', function(e) {
+      var el = document.getElementById('app');
+      if (el && !el.innerHTML.trim()) window.__showAppError(e.message || 'Ошибка скрипта');
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      var el = document.getElementById('app');
+      if (el && !el.innerHTML.trim()) window.__showAppError((e.reason && e.reason.message) || e.reason || 'Ошибка загрузки');
+    });
   </script>
-</body>
-</html>
+    <script type="module">
+    async function bootApp(attempt) {
+      try {
+        const target = attempt === 0 ? './js/app.js?v=110' : './js/app.js';
+        await import(target);
+      } catch (err) {
+        if (attempt < 1) {
+          setTimeout(function() { bootApp(attempt + 1); }, 300);
+          return;
+        }
+        if (window.__showAppError) window.__showAppError(err);
+      }
+    }
+    bootApp(0);
+  </script>
