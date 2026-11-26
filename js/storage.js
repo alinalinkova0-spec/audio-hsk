@@ -3,7 +3,7 @@ const DB_NAME = 'hsk_trainer_backup';
 const STORE_NAME = 'kv';
 const CACHE_BACKUP = 'hsk_state_cache_v1';
 const CACHE_URL = '/__hsk_state_backup__.json';
-const SB_URL = 'https://srtoxpakayozfeqxjqdd.supabase.co';
+const SB_URL = 'https://' + 'srtoxpakayozfeqxjqdd.supabase.co';
 const SB_KEY = 'sb_publishable_EvXS1QB5OMOKnK8poiXCTQ_VXMcefQ2';
 const EMAIL_KEY = 'hsk_user_email';
 const SYNC_KEYS = [
@@ -12,7 +12,7 @@ const SYNC_KEYS = [
   'hsk_daily_goal', 'hsk_daily_plan_v1', 'hsk_streak', 'hsk_weakness_v1',
   'hsk_tone_ru', 'hsk_settings_visited', 'hsk_sfx_off', 'hsk_sfx_theme',
   'hsk_rem_on', 'hsk_rem_time', 'hsk_rem_freq', 'hsk_show_progress',
-  'hsk_start_date', 'hsk_vocab_v13'
+  'hsk_start_date', 'hsk_hard_words_v1', 'hsk_program', 'hsk_auto_speak_ui'
 ];
 
 function fetchWithTimeout(url, options = {}, ms = 4000) {
@@ -107,6 +107,7 @@ function writeBackupDB(key, value) {
     else tx.objectStore(STORE_NAME).put(String(value), key);
   }).catch(() => {});
 }
+
 function setLongCookie(name, val) {
   try {
     document.cookie = `${name}=${encodeURIComponent(val)}; max-age=31536000; path=/; SameSite=Lax`;
@@ -116,20 +117,21 @@ function setLongCookie(name, val) {
 function getLongCookie(name) {
   try {
     const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
-    return m ? decodeURIComponent(m[1]) : '';
+    return m ? decodeURIComponent(m) : '';
   } catch {
     return '';
   }
 }
+
 export function normalizeGooseCode(raw) {
   let clean = String(raw || '').trim().toUpperCase();
   clean = clean.replace(/^ГУСЬ[-\s_]*/i, 'GOOSE-');
-  clean = clean.replace(/[^A-Z0-9-]/g, '');
+  clean = clean.replace(/[^A-Z0-9-@._]/g, '');
   if (!clean) return '';
   if (!clean.startsWith('GOOSE-') && !clean.includes('@')) {
     clean = 'GOOSE-' + clean;
   }
-  return clean.slice(0, 24);
+  return clean.slice(0, 36);
 }
 
 export function generateGooseCode() {
@@ -185,14 +187,37 @@ let isApplyingRemote = false;
 
 function scheduleCloudSync() {
   if (isApplyingRemote) return;
-  const email = (safeStorage.getItem(EMAIL_KEY) || '').trim().toLowerCase();
+  const email = getSavedEmail();
   if (!email) return;
   if (cloudTimer) clearTimeout(cloudTimer);
   cloudTimer = setTimeout(() => {
     pushCloudState(email).catch(() => {});
-  }, 1200);
+  }, 800);
 }
 
+function pruneOldDailyKeys() {
+  try {
+    const now = new Date();
+    const eff = new Date(now.getTime() - 4 * 3600 * 1000);
+    const todayStr = eff.toISOString().slice(0, 10);
+    const toRemove = [];
+    for (let i = 0; i < window.localStorage.length; i++) {
+      const k = window.localStorage.key(i);
+      if (!k) continue;
+      if ((k.startsWith('hsk_daily_') && !k.includes('goal') && !k.includes('plan')) || k.startsWith('hsk_mood_')) {
+        if (!k.endsWith(todayStr)) toRemove.push(k);
+      }
+      if (k === 'hsk_vocab_v14' || k.startsWith('hsk_words_lvl_')) {
+        toRemove.push(k);
+      }
+    }
+    toRemove.forEach(k => {
+      delete memoryStorage[k];
+      try { window.localStorage.removeItem(k); } catch {}
+    });
+  } catch {}
+}
+pruneOldDailyKeys();
 export const safeStorage = {
   getItem(key) {
     try {
@@ -215,11 +240,19 @@ export const safeStorage = {
     memoryStorage[key] = strVal;
     try {
       window.localStorage.setItem(key, strVal);
-    } catch (e) {}
+    } catch (e) {
+      pruneOldDailyKeys();
+      try { window.localStorage.setItem(key, strVal); } catch {}
+    }
     setCookie(key, strVal);
     writeBackupDB(key, strVal);
     scheduleCacheBackup();
-    if (key !== 'hsk_last_cloud_sync') scheduleCloudSync();
+    if (key !== 'hsk_last_cloud_sync' && key !== 'hsk_state_ts') {
+      const nowTs = String(Date.now());
+      memoryStorage['hsk_state_ts'] = nowTs;
+      try { window.localStorage.setItem('hsk_state_ts', nowTs); } catch (e) {}
+      scheduleCloudSync();
+    }
   },
 
   removeItem(key) {
@@ -232,9 +265,10 @@ export const safeStorage = {
     scheduleCacheBackup();
   }
 };
-
 export function getSavedEmail() {
-  return (safeStorage.getItem(EMAIL_KEY) || '').trim().toLowerCase();
+  const raw = (safeStorage.getItem(EMAIL_KEY) || '').trim();
+  if (!raw) return '';
+  return raw.includes('@') ? raw.toLowerCase() : normalizeGooseCode(raw);
 }
 export function getSavedName() {
   return (safeStorage.getItem('hsk_user_name') || '').trim();
@@ -246,7 +280,6 @@ export function setSavedName(name) {
     setLongCookie('hsk_uid_name', clean);
   }
 }
-
 function collectLocalProfileState() {
   const state = {};
   for (const k of SYNC_KEYS) {
@@ -261,13 +294,18 @@ function collectLocalProfileState() {
       }
     }
   } catch (e) {}
+  state.__updated_at = Number(safeStorage.getItem('hsk_state_ts') || Date.now());
   return state;
 }
 
-function mergeProfileStates(localState, remoteState) {
-  const merged = { ...(localState || {}), ...(remoteState || {}) };
+function mergeProfileStates(localState, remoteState, preferLocalSettings = false) {
+  const locTs = Number(localState?.__updated_at || 0);
+  const remTs = Number(remoteState?.__updated_at || 0);
+  const remoteIsNewer = !preferLocalSettings && (remTs > locTs);
+  const merged = remoteIsNewer
+    ? { ...(localState || {}), ...(remoteState || {}) }
+    : { ...(remoteState || {}), ...(localState || {}) };
 
-  // 1. Умное слияние словарей SRS (ни одно выученное слово с телефона или ноутбука не пропадёт)
   try {
     const locSrs = JSON.parse(localState?.srs_hsk4_v1 || '{}');
     const remSrs = JSON.parse(remoteState?.srs_hsk4_v1 || '{}');
@@ -289,16 +327,28 @@ function mergeProfileStates(localState, remoteState) {
     }
   } catch {}
 
-  // 2. Умное слияние уровня HSK (берём более высокий из двух устройств)
-  const locLvl = Number(localState?.hsk_lvl || localState?.hsk_start_lvl || 0);
-  const remLvl = Number(remoteState?.hsk_lvl || remoteState?.hsk_start_lvl || 0);
-  const bestLvl = Math.max(locLvl, remLvl);
-  if (bestLvl >= 1 && bestLvl <= 6) {
-    merged.hsk_lvl = String(bestLvl);
-    merged.hsk_start_lvl = String(bestLvl);
-  }
+  const allKeys = new Set([...Object.keys(localState || {}), ...Object.keys(remoteState || {})]);
+  allKeys.forEach(k => {
+    if (k.startsWith('hsk_daily_') && !k.includes('goal') && !k.includes('plan')) {
+      try {
+        const dA = JSON.parse(localState?.[k] || '{}');
+        const dB = JSON.parse(remoteState?.[k] || '{}');
+        const fields = new Set([...Object.keys(dA), ...Object.keys(dB)]);
+        const resDay = {};
+        fields.forEach(f => {
+          resDay[f] = Math.max(Number(dA[f] || 0), Number(dB[f] || 0));
+        });
+        merged[k] = JSON.stringify(resDay);
+      } catch {}
+    }
+  });
 
-  // 3. Объединение календаря посещений с лапками (ноутбук + телефон без дублей)
+  try {
+    const hA = JSON.parse(localState?.hsk_hard_words_v1 || '[]');
+    const hB = JSON.parse(remoteState?.hsk_hard_words_v1 || '[]');
+    merged.hsk_hard_words_v1 = JSON.stringify(Array.from(new Set([...(Array.isArray(hA) ? hA : []), ...(Array.isArray(hB) ? hB : [])])));
+  } catch {}
+
   try {
     const locDays = JSON.parse(localState?.hsk_visit_days_v1 || '[]');
     const remDays = JSON.parse(remoteState?.hsk_visit_days_v1 || '[]');
@@ -311,13 +361,14 @@ function mergeProfileStates(localState, remoteState) {
     }
   } catch {}
 
+  merged.__updated_at = Math.max(locTs, remTs, Date.now());
   return merged;
 }
 
-function applyRemoteProfileState(remoteState) {
+function applyRemoteProfileState(remoteState, preferLocalSettings = false) {
   if (!remoteState || typeof remoteState !== 'object') return;
   const localState = collectLocalProfileState();
-  const merged = mergeProfileStates(localState, remoteState);
+  const merged = mergeProfileStates(localState, remoteState, preferLocalSettings);
   isApplyingRemote = true;
   try {
     Object.entries(merged).forEach(([k, v]) => {
@@ -329,47 +380,59 @@ function applyRemoteProfileState(remoteState) {
     isApplyingRemote = false;
   }
 }
-
 export async function pushCloudState(emailInput) {
-  const email = String(emailInput || getSavedEmail()).trim().toLowerCase();
-  if (!email) return { ok: false };
-  safeStorage.setItem(EMAIL_KEY, email);
-    setLongCookie('hsk_uid_mail', email);
+  const raw = String(emailInput || getSavedEmail()).trim();
+  if (!raw) return { ok: false };
+  const email = raw.includes('@') ? raw.toLowerCase() : normalizeGooseCode(raw);
+
+  isApplyingRemote = true;
+  try {
+    safeStorage.setItem(EMAIL_KEY, email);
+  } finally {
+    isApplyingRemote = false;
+  }
+  setLongCookie('hsk_uid_mail', email);
   const curName = getSavedName();
   if (curName) setLongCookie('hsk_uid_name', curName);
   scheduleCacheBackup();
 
   let stateObj = collectLocalProfileState();
+  let matchedDbEmail = email;
+
   try {
     const prevRes = await fetchWithTimeout(
-      `${SB_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(email)}&select=state`,
-      { headers: { 'apikey': SB_KEY } },
+      `${SB_URL}/rest/v1/user_profiles?email=ilike.${encodeURIComponent(email)}&select=email,state&limit=1`,
+      { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` } },
       2500
     );
     if (prevRes.ok) {
       const rows = await prevRes.json().catch(() => []);
-            if (Array.isArray(rows) && rows.length > 0 && rows.at(0).state) {
-        stateObj = mergeProfileStates(stateObj, rows.at(0).state);
-        applyRemoteProfileState(stateObj);
+      if (Array.isArray(rows) && rows.length > 0) {
+        if (rows.at(0).email) matchedDbEmail = rows.at(0).email;
+        if (rows.at(0).state) {
+          stateObj = mergeProfileStates(stateObj, rows.at(0).state, true);
+          applyRemoteProfileState(stateObj, true);
+        }
       }
-            }
+    }
   } catch {}
-    const baseHeaders = {
+
+  const baseHeaders = {
     'apikey': SB_KEY,
+    'Authorization': `Bearer ${SB_KEY}`,
     'Content-Type': 'application/json',
     'Prefer': 'return=representation'
   };
 
   try {
-    // 1. Пробуем обновить существующую запись через PATCH
-    let res = await fetchWithTimeout(`${SB_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(email)}`, {
+    let res = await fetchWithTimeout(`${SB_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(matchedDbEmail)}`, {
       method: 'PATCH',
       headers: baseHeaders,
       body: JSON.stringify({ state: stateObj, updated_at: new Date().toISOString() })
     }, 4500);
 
     if (!res.ok) {
-      res = await fetchWithTimeout(`${SB_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(email)}`, {
+      res = await fetchWithTimeout(`${SB_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(matchedDbEmail)}`, {
         method: 'PATCH',
         headers: baseHeaders,
         body: JSON.stringify({ state: stateObj })
@@ -385,7 +448,6 @@ export async function pushCloudState(emailInput) {
       }
     }
 
-    // 2. Если записи ещё нет в базе — создаём новую через POST
     let ins = await fetchWithTimeout(`${SB_URL}/rest/v1/user_profiles`, {
       method: 'POST',
       headers: baseHeaders,
@@ -414,16 +476,18 @@ export async function pushCloudState(emailInput) {
 }
 
 export async function pullCloudState(emailInput) {
-  const email = String(emailInput || getSavedEmail()).trim().toLowerCase();
-  if (!email) return { ok: false, found: false };
+  const raw = String(emailInput || getSavedEmail()).trim();
+  if (!raw) return { ok: false, found: false };
+  const email = raw.includes('@') ? raw.toLowerCase() : normalizeGooseCode(raw);
 
   try {
     const res = await fetchWithTimeout(
-      `${SB_URL}/rest/v1/user_profiles?email=eq.${encodeURIComponent(email)}&select=state`,
+      `${SB_URL}/rest/v1/user_profiles?email=ilike.${encodeURIComponent(email)}&select=email,state&limit=1`,
       {
         method: 'GET',
         headers: {
-          'apikey': SB_KEY
+          'apikey': SB_KEY,
+          'Authorization': `Bearer ${SB_KEY}`
         }
       },
       4000
@@ -431,9 +495,14 @@ export async function pullCloudState(emailInput) {
     if (!res.ok) return { ok: false, found: false };
     const rows = await res.json();
     if (Array.isArray(rows) && rows.length > 0 && rows.at(0).state) {
-      applyRemoteProfileState(rows.at(0).state);
-      safeStorage.setItem(EMAIL_KEY, email);
-      safeStorage.setItem('hsk_last_cloud_sync', new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+      applyRemoteProfileState(rows.at(0).state, false);
+      isApplyingRemote = true;
+      try {
+        safeStorage.setItem(EMAIL_KEY, email);
+        safeStorage.setItem('hsk_last_cloud_sync', new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }));
+      } finally {
+        isApplyingRemote = false;
+      }
       return { ok: true, found: true };
     }
     return { ok: true, found: false };
@@ -448,7 +517,12 @@ export async function loginByEmail(codeInput) {
     return { ok: false, message: 'Введи гусиный код (например, GOOSE-007)' };
   }
   const enteredName = getSavedName();
-  safeStorage.setItem(EMAIL_KEY, code);
+  isApplyingRemote = true;
+  try {
+    safeStorage.setItem(EMAIL_KEY, code);
+  } finally {
+    isApplyingRemote = false;
+  }
   setLongCookie('hsk_uid_mail', code);
 
   const pulled = await pullCloudState(code);
@@ -469,10 +543,10 @@ export function logoutEmail() {
   safeStorage.removeItem(EMAIL_KEY);
   safeStorage.removeItem('hsk_user_name');
   safeStorage.removeItem('hsk_last_cloud_sync');
-    setLongCookie('hsk_uid_mail', '');
+  setLongCookie('hsk_uid_mail', '');
   setLongCookie('hsk_uid_name', '');
-
 }
+
 export async function findProfilesByNickname(nickname) {
   const clean = String(nickname || '').trim();
   if (!clean) return { ok: false, items: [] };
@@ -481,7 +555,7 @@ export async function findProfilesByNickname(nickname) {
     const query = `${SB_URL}/rest/v1/user_profiles?state->>hsk_user_name=ilike.*${encodeURIComponent(clean)}*&select=email,state,updated_at&limit=10`;
     const res = await fetchWithTimeout(query, {
       method: 'GET',
-      headers: { 'apikey': SB_KEY }
+      headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}` }
     }, 4500);
 
     if (!res.ok) return { ok: false, items: [] };

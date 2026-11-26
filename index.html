@@ -20,7 +20,7 @@
   <link rel="apple-touch-icon" href="./goose_icon.jpg">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#FAF6EE">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=42">
 </head>
 <body>
   <header class="topbar">
@@ -109,7 +109,7 @@
     <script type="module">
     async function bootApp(attempt) {
       try {
-        const target = attempt === 0 ? './js/app.js?v=121' : './js/app.js';
+        const target = attempt === 0 ? './js/app.js?v=142' : './js/app.js';
         await import(target);
       } catch (err) {
         if (attempt < 1) {

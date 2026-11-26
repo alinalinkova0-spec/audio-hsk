@@ -1,4 +1,4 @@
- import { safeStorage } from '../storage.js?v=7';
+import { safeStorage } from '../storage.js?v=7';
 import { speak, mountAudioControl } from '../audio.js?v=13';
 
 export async function renderPlacementTest(app, ctx) {

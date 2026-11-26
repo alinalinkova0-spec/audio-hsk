@@ -1,8 +1,71 @@
-import { safeStorage } from '../storage.js?v=6';
+import { safeStorage } from '../storage.js?v=10';
 import { speak, mountAudioControl } from '../audio.js?v=13';
 import { review, saveSRS } from '../srs.js';
-const RECENT_SHOWN = []; // Хранит ID/hanzi слов из последних 3 карточек (до 12 штук)
+import { openWordReportModal } from '../feedback.js?v=2';
 
+const HARD_KEY = 'hsk_hard_words_v1';
+
+export function getHardWordIds() {
+  try {
+    const arr = JSON.parse(safeStorage.getItem(HARD_KEY) || '[]');
+    return Array.isArray(arr) ? arr : [];
+  } catch {
+    return [];
+  }
+}
+
+export function markHardWord(wordId) {
+  const list = getHardWordIds();
+  if (!list.includes(wordId)) {
+    list.push(wordId);
+    safeStorage.setItem(HARD_KEY, JSON.stringify(list));
+  }
+}
+
+export function unmarkHardWord(wordId) {
+  const list = getHardWordIds().filter(id => id !== wordId);
+  safeStorage.setItem(HARD_KEY, JSON.stringify(list));
+}
+
+function knowsWord(srsState, allWords, hanzi) {
+  const found = allWords.find(w => w.hanzi === hanzi);
+  return Boolean(found && srsState[found.id] && srsState[found.id].reps >= 1);
+}
+
+function renderInteractiveHanzi(hanzi, allWords) {
+  const chars = [...String(hanzi || '')];
+  if (chars.length < 2) return `<div style="line-height:1.25;">${hanzi}</div>`;
+  return `
+    <div style="display:inline-flex;gap:8px;justify-content:center;flex-wrap:wrap;line-height:1.25;">
+      ${chars.map(ch => `<span class="char-part" data-char="${ch}" style="cursor:pointer;padding:2px 4px 4px;border-bottom:2px dashed rgba(30,126,94,0.5);">${ch}</span>`).join('')}
+    </div>
+  `;
+}
+
+function bindInteractiveHanzi(container, allWords, rate = 0.95) {
+  const box = container.querySelector('#charBreakdownBox');
+  container.querySelectorAll('.char-part').forEach(el => {
+    el.onclick = () => {
+      const ch = el.dataset.char;
+      speak(ch, { rate, instant: true });
+      const info = allWords.find(w => w.hanzi === ch);
+      if (box) {
+        box.style.color = 'var(--jade)';
+        box.innerHTML = info
+          ? `<b>${ch}</b> (${info.pinyin || '—'}) — ${info.ru || 'отдельный иероглиф'}`
+          : `<b>${ch}</b> — озвучено (отдельный корень)`;
+      }
+    };
+  });
+}
+function renderReportFlag(container, word) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'margin-top:14px;padding-top:10px;border-top:1px solid var(--border);text-align:center;';
+  wrap.innerHTML = `<button type="button" id="flagWordBtn" class="ghost" style="min-height:36px;font-size:13px;padding:6px 12px;color:var(--muted);border-color:transparent;"><span style="color:#DC2626;font-size:15px;margin-right:5px;">⚑</span>Ошибка в переводе или пиньине?</button>`;
+  container.appendChild(wrap);
+  wrap.querySelector('#flagWordBtn').onclick = () => openWordReportModal(word);
+}
+const RECENT_SHOWN = [];
 function markWordsShown(wordsList) {
   for (const w of wordsList) {
     if (!w) continue;
@@ -21,14 +84,11 @@ function isRecentlyShown(word) {
   return RECENT_SHOWN.includes(word.hanzi || String(word.id));
 }
 
-// Умный сдвиг очереди: если следующее слово только что мелькало в вариантах ответа,
-// отправляем его глубже в очередь, чтобы нельзя было угадать по памяти
 export function pickNextNonRecentIndex(queue, startIdx = 0) {
   if (!Array.isArray(queue) || startIdx >= queue.length) return startIdx;
   const getWord = item => (item && item.word ? item.word : item);
   if (!isRecentlyShown(getWord(queue[startIdx]))) return startIdx;
 
-  // Ищем ближайшее слово дальше по очереди, которого не было в последних 3 карточках
   for (let i = startIdx + 1; i < queue.length; i++) {
     if (!isRecentlyShown(getWord(queue[i]))) {
       const [picked] = queue.splice(i, 1);
@@ -157,9 +217,18 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
   const all = window.__ALL_WORDS || [];
   const tier = meta.tier || 'medium';
   const stepLabel = meta.label || '';
+  const knowsFullIdk = knowsWord(srsState, all, '我')
+    && (knowsWord(srsState, all, '不知道') || (knowsWord(srsState, all, '不') && knowsWord(srsState, all, '知道')))
+    && knowsWord(srsState, all, '这个')
+    && knowsWord(srsState, all, '词');
+  const idkLabel = knowsFullIdk ? '我不知道这个词' : 'Я не знаю этого слова';
 
   const tierColors = { easy: '#1E7E5E', medium: '#B45309', hard: '#C83E37' };
-  const tierNames = { easy: 'Разминка', medium: 'Средний', hard: 'Сложный (тоны и ловушки)' };
+  const tierNames = {
+    easy: 'Разминка',
+    medium: 'Средний',
+    hard: 'Сложный (тоны и ловушки)'
+  };
 
   root.innerHTML = `
     <div class="card">
@@ -167,37 +236,20 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
         <span style="color:${tierColors[tier]};font-weight:600;">${tierNames[tier]}</span>
         <span style="color:var(--muted);">${stepLabel}</span>
       </div>
-      <div id="wordAudioBox" class="card-audio"></div>
+      <div style="min-height:110px;display:flex;align-items:center;justify-content:center;">
+        <div id="wordAudioBox" class="card-audio" style="width:100%;"></div>
+      </div>
       <p class="prompt">Какое слово прозвучало?</p>
       <div class="answers" id="answers" style="grid-template-columns:1fr 1fr;gap:10px;"></div>
+      <button id="idkBtn" type="button" class="ghost" style="width:100%;margin-top:8px;padding:10px;font-size:15px;font-weight:600;color:var(--muted);">${idkLabel}</button>
       <div class="reveal" id="reveal" hidden>
         <div class="hanzi" id="hanzi"></div>
-        <div class="grades" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px;">
-          <button data-grade="0" style="background:#FFFFFF;color:#B91C1C;border:2px solid #F87171;font-weight:700;padding:12px;">Забыл</button>
-          <button data-grade="2" style="background:#FFFFFF;color:#15803D;border:2px solid #4ADE80;font-weight:700;padding:12px;">Норм</button>
-          <button data-grade="1" style="background:#FFFFFF;color:#B45309;border:2px solid #FBBF24;font-weight:700;padding:12px;">Сложно</button>
-          <button data-grade="3" style="background:#FFFFFF;color:#065F46;border:2px solid #10B981;font-weight:700;padding:12px;">Легко</button>
-        </div>
+        <div class="grades" style="margin-top:14px;"></div>
       </div>
     </div>`;
 
-  const pool = all.length >= 4 ? all : [...all, { id:'x1', hanzi:'学习', pinyin:'xuéxí', ru:'учиться' }, { id:'x2', hanzi:'联系', pinyin:'liánxì', ru:'связываться' }, { id:'x3', hanzi:'练习', pinyin:'liànxí', ru:'тренироваться' }];
-  const distractors = pickDistractors(word, pool, tier);
-  const opts = shuffle([word, ...distractors]);
-  markWordsShown(opts);
-
   const answerEl = root.querySelector('#answers');
-  opts.forEach(o => {
-    const b = document.createElement('button');
-    b.className = 'answer';
-    b.style.fontSize = '28px';
-    b.style.textAlign = 'center';
-    b.textContent = o.hanzi;
-    b.dataset.hanzi = o.hanzi;
-    b.onclick = () => choose(o, b);
-    answerEl.appendChild(b);
-  });
-
+  const idkBtn = root.querySelector('#idkBtn');
   const reveal = root.querySelector('#reveal');
   const audioCtrl = mountAudioControl(
     root.querySelector('#wordAudioBox'),
@@ -206,49 +258,98 @@ export function renderCard(root, word, srsState, onDone, meta = {}) {
   );
 
   let done = false;
-  function choose(o, btn) {
-    if (done) {
-      speak(o.hanzi, { rate: audioCtrl.getRate(), instant: true });
-      const previewEl = reveal.querySelector('#optPreview');
-      if (previewEl) {
-        previewEl.textContent = `Прослушано: ${o.hanzi}${o.pinyin ? ` (${o.pinyin})` : ''}${o.ru ? ` — ${o.ru}` : ''}`;
-      }
-      return;
-    }
+
+  function openReveal(ok, wrongOption = null, viaIdk = false) {
     done = true;
-    const ok = o.id === word.id;
-    btn.classList.add(ok ? 'ok' : 'bad');
+    if (idkBtn) idkBtn.style.display = 'none';
+    if (viaIdk && answerEl) answerEl.style.display = 'none';
+
     const prevStreak = Number(safeStorage.getItem('hsk_streak') || 0);
     safeStorage.setItem('hsk_streak', ok ? String(prevStreak + 1) : '0');
-    Array.from(answerEl.children).forEach(b => {
-      if (!ok && b.dataset.hanzi === word.hanzi) b.classList.add('ok');
-      b.innerHTML = `${b.dataset.hanzi || b.textContent} <span style="font-size:14px;opacity:0.75;">🔊</span>`;
-    });
+
     if (!ok) {
       recordWeakness(word.id, 'audioErr');
+      markHardWord(word.id);
+    } else if (meta.clearHardOnOk) {
+      unmarkHardWord(word.id);
     }
-    speak(o.hanzi, { rate: audioCtrl.getRate() });
 
-    const wrongHint = (!ok && o.pinyin)
-      ? `<div style="font-size:15px;color:#C83E37;margin-top:10px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">Твой выбор: ${o.hanzi} (${o.pinyin}) — ${o.ru || ''}</div>`
+    review(srsState, word.id, ok ? 2 : 0);
+    saveSRS(srsState);
+    speak(word.hanzi, { rate: audioCtrl.getRate() });
+
+     const wrongHint = (!ok && !viaIdk && wrongOption)
+      ? `<div style="font-size:15px;color:#C83E37;margin-top:10px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">Твой выбор: ${wrongOption.hanzi} — ${wrongOption.ru || ''}</div>`
       : '';
 
+    const charsLen = [...String(word.hanzi || '')].length;
     reveal.hidden = false;
     reveal.querySelector('#hanzi').innerHTML = `
-      <div>${word.hanzi}</div>
-      ${word.pinyin ? `<div style="font-size:20px;color:#1E7E5E;margin-top:6px;font-weight:500;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.pinyin}</div>` : ''}
-      ${word.ru ? `<div style="font-size:19px;color:#231F20;margin-top:6px;font-weight:600;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.ru}</div>` : ''}
+      ${renderInteractiveHanzi(word.hanzi, all)}
+      ${word.ru ? `<div style="margin-top:12px;"><span style="display:inline-block;padding:7px 16px;border-radius:12px;background:#FFF8EB;border:1px solid #F3D19E;font-size:18px;color:#1F2937;font-weight:700;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">${word.ru}</span></div>` : ''}
+      ${charsLen >= 2 ? `<div id="charBreakdownBox" style="font-size:12px;color:var(--muted);margin-top:10px;min-height:18px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;">💡 Нажми на иероглиф выше, чтобы узнать его значение</div>` : ''}
       ${wrongHint}
-      <div id="optPreview" style="font-size:14px;color:var(--jade);margin-top:8px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;"></div>
+      <div id="optPreview" style="font-size:13px;color:var(--jade);margin-top:6px;font-family:'Inter',system-ui,sans-serif;letter-spacing:normal;"></div>
     `;
-    reveal.querySelectorAll('[data-grade]').forEach(g => {
-      g.onclick = () => {
-        review(srsState, word.id, +g.dataset.grade);
-        saveSRS(srsState);
-        onDone();
-      };
-    });
+    bindInteractiveHanzi(reveal, all, audioCtrl.getRate());
+
+     const gradesEl = reveal.querySelector('.grades');
+    if (gradesEl) {
+      gradesEl.style.display = 'block';
+      gradesEl.innerHTML = `<button id="cardNextBtn" class="primary" style="width:100%;padding:13px;font-size:16px;">Дальше →</button>`;
+      const nextBtn = gradesEl.querySelector('#cardNextBtn');
+      if (nextBtn) nextBtn.onclick = onDone;
+    }
+
+    renderReportFlag(reveal, word);
   }
+
+  if (idkBtn) {
+
+    idkBtn.onclick = () => {
+      if (done) return;
+      Array.from(answerEl.children).forEach(b => {
+        if (b.dataset.hanzi === word.hanzi) b.classList.add('ok');
+      });
+      openReveal(false, null, true);
+    };
+  }
+
+  const pool = all.length >= 4 ? all : [...all, { id: 'x1', hanzi: '学习', pinyin: 'xuéxí', ru: 'учиться' }, { id: 'x2', hanzi: '联系', pinyin: 'liánxì', ru: 'связываться' }, { id: 'x3', hanzi: '练习', pinyin: 'liànxí', ru: 'тренироваться' }];
+  const distractors = pickDistractors(word, pool, tier);
+  const opts = shuffle([word, ...distractors]);
+  markWordsShown(opts);
+
+  opts.forEach(o => {
+    const b = document.createElement('button');
+    b.className = 'answer';
+    b.style.fontSize = '28px';
+    b.style.textAlign = 'center';
+    b.style.minHeight = '58px';
+    b.style.display = 'flex';
+    b.style.alignItems = 'center';
+    b.style.justifyContent = 'center';
+    b.textContent = o.hanzi;
+    b.dataset.hanzi = o.hanzi;
+    b.onclick = () => {
+      if (done) {
+        speak(o.hanzi, { rate: audioCtrl.getRate(), instant: true });
+        const previewEl = reveal.querySelector('#optPreview');
+        if (previewEl) {
+          previewEl.textContent = `Прослушано: ${o.hanzi}${o.pinyin ? ` (${o.pinyin})` : ''}${o.ru ? ` — ${o.ru}` : ''}`;
+        }
+        return;
+      }
+      const ok = o.id === word.id;
+      b.classList.add(ok ? 'ok' : 'bad');
+      Array.from(answerEl.children).forEach(btnItem => {
+        if (!ok && btnItem.dataset.hanzi === word.hanzi) btnItem.classList.add('ok');
+        btnItem.innerHTML = `${btnItem.dataset.hanzi || btnItem.textContent} <span style="font-size:14px;opacity:0.75;">🔊</span>`;
+      });
+      openReveal(ok, o, false);
+    };
+    answerEl.appendChild(b);
+  });
 }
 
 export function renderReadCard(root, word, srsState, onDone, meta = {}) {
@@ -270,45 +371,55 @@ export function renderReadCard(root, word, srsState, onDone, meta = {}) {
         <span style="color:#1E7E5E;font-weight:700;">👀 Чтение без звука</span>
         <span style="color:var(--muted);">${meta.label || ''}</span>
       </div>
-      <div style="text-align:center;padding:18px 0 12px;">
-        <div style="font-size:48px;font-weight:800;letter-spacing:2px;color:var(--fg);">${word.hanzi}</div>
-        <div id="readPinyin" style="font-size:18px;color:var(--jade);margin-top:6px;min-height:24px;"></div>
+        <div style="text-align:center;min-height:110px;display:flex;align-items:center;justify-content:center;">
+        <div style="font-size:52px;font-weight:800;line-height:1.25;letter-spacing:3px;color:var(--fg);">${word.hanzi}</div>
       </div>
       <p class="prompt">Узнай иероглиф глазами и выбери перевод</p>
-      <div class="answers" id="answers" style="grid-template-columns:1fr;"></div>
+      <div class="answers" id="answers" style="grid-template-columns:1fr 1fr;gap:10px;"></div>
+      <button id="readIdkBtn" type="button" class="ghost" style="width:100%;margin-top:8px;padding:10px;font-size:15px;font-weight:600;color:var(--muted);">Я не знаю этого слова</button>
       <div id="readFooter" style="text-align:center;margin-top:12px;"></div>
     </div>`;
 
   const answerEl = root.querySelector('#answers');
-  const pinyinEl = root.querySelector('#readPinyin');
   const footerEl = root.querySelector('#readFooter');
+  const idkBtn = root.querySelector('#readIdkBtn');
   let done = false;
+
+  function finishRead(ok, clickedBtn = null) {
+    if (done) return;
+    done = true;
+    if (idkBtn) idkBtn.style.display = 'none';
+    if (clickedBtn) clickedBtn.classList.add(ok ? 'ok' : 'bad');
+    if (!ok) {
+      recordWeakness(word.id, 'readErr');
+      markHardWord(word.id);
+      Array.from(answerEl.children).forEach(x => {
+        if (x.textContent === mainRu(word.ru)) x.classList.add('ok');
+      });
+    }
+    speak(word.hanzi, { rate: 0.95 });
+    review(srsState, word.id, ok ? 2 : 0);
+    saveSRS(srsState);
+
+    footerEl.innerHTML = `<button id="readNext" class="primary" style="width:100%;padding:13px;font-size:16px;">Дальше →</button>`;
+    footerEl.querySelector('#readNext').onclick = onDone;
+    renderReportFlag(footerEl, word);
+  }
+
+  if (idkBtn) idkBtn.onclick = () => finishRead(false, null);
 
   opts.forEach(o => {
     const b = document.createElement('button');
     b.className = 'answer';
     b.style.fontSize = '17px';
     b.style.padding = '13px';
+    b.style.minHeight = '58px';
+    b.style.display = 'flex';
+    b.style.alignItems = 'center';
+    b.style.justifyContent = 'center';
+    b.style.textAlign = 'center';
     b.textContent = mainRu(o.ru);
-    b.onclick = () => {
-      if (done) return;
-      done = true;
-      const ok = o.id === word.id;
-      b.classList.add(ok ? 'ok' : 'bad');
-      if (!ok) {
-        recordWeakness(word.id, 'readErr');
-        Array.from(answerEl.children).forEach(x => {
-          if (x.textContent === mainRu(word.ru)) x.classList.add('ok');
-        });
-      }
-      pinyinEl.textContent = word.pinyin || '';
-      speak(word.hanzi, { rate: 0.95 });
-      review(srsState, word.id, ok ? 3 : 0);
-      saveSRS(srsState);
-
-      footerEl.innerHTML = `<button id="readNext" class="cta" style="border:none;cursor:pointer;padding:10px 24px;">Дальше →</button>`;
-      footerEl.querySelector('#readNext').onclick = onDone;
-    };
+    b.onclick = () => finishRead(o.id === word.id, b);
     answerEl.appendChild(b);
   });
 }
@@ -394,7 +505,7 @@ const SYLLABLE_TONE_HANZI = {
   zong: '宗,总,总,纵', zou: '邹,走,走,奏', zu: '租,足,组,祖', zuan: '钻,纂,纂,赚', zui: '嘴,嘴,嘴,最',
   zun: '尊,遵,尊,俊', zuo: '作,昨,左,坐'
 };
-  function pinyinToSpeakableHanzi(pyOption, allWords, fallbackWord) {
+function pinyinToSpeakableHanzi(pyOption, allWords, fallbackWord) {
   const cleanOpt = String(pyOption || '').trim().toLowerCase();
   if (cleanOpt === String(fallbackWord.pinyin || '').trim().toLowerCase()) {
     return fallbackWord.hanzi;
@@ -444,7 +555,7 @@ export function renderToneCard(root, word, srsState, onDone, meta = {}) {
       <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:8px;font-size:13px;">
         <span style="color:var(--muted);font-weight:600;">${meta.label || ''}</span>
       </div>
-      <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:10px;">
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;min-height:110px;margin-bottom:6px;">
         <div id="toneAudioBox" class="card-audio" style="margin:0;"></div>
         <div style="display:flex;flex-direction:column;align-items:center;gap:8px;">
           <button id="toggleRuBtn" class="ghost" style="padding:6px 12px;font-size:12px;font-weight:700;border-radius:999px;border-color:${showRu ? 'var(--jade)' : 'var(--border)'};background:${showRu ? '#EDF5F0' : '#FAFBF9'};color:${showRu ? 'var(--jade)' : 'var(--muted)'};white-space:nowrap;">
@@ -459,13 +570,14 @@ export function renderToneCard(root, word, srsState, onDone, meta = {}) {
       </div>
       <p class="prompt">Выбери правильный тон пиньиня</p>
       <div class="answers" id="answers" style="grid-template-columns:1fr 1fr;gap:10px;"></div>
+      <button id="toneIdkBtn" type="button" class="ghost" style="width:100%;margin-top:8px;padding:10px;font-size:15px;font-weight:600;color:var(--muted);">Я не знаю</button>
       <div id="toneFooter" style="text-align:center;margin-top:12px;"></div>
     </div>`;
-
-  const answerEl = root.querySelector('#answers');
+    const answerEl = root.querySelector('#answers');
   const footerEl = root.querySelector('#toneFooter');
   const ruTextEl = root.querySelector('#toneRuText');
   const toggleRuBtn = root.querySelector('#toggleRuBtn');
+  const idkBtn = root.querySelector('#toneIdkBtn');
   let done = false;
 
   const audioBox = root.querySelector('#toneAudioBox');
@@ -490,6 +602,33 @@ export function renderToneCard(root, word, srsState, onDone, meta = {}) {
     ruTextEl.style.display = showRu ? 'block' : 'none';
   };
 
+  function finishTone(ok, clickedBtn = null) {
+    if (done) return;
+    done = true;
+    if (idkBtn) idkBtn.style.display = 'none';
+    if (clickedBtn) clickedBtn.classList.add(ok ? 'ok' : 'bad');
+    ruTextEl.style.display = 'block';
+    if (!ok) {
+      recordWeakness(word.id, 'toneErr');
+      markHardWord(word.id);
+      Array.from(answerEl.children).forEach(x => {
+        if (x.dataset.py === word.pinyin.trim()) x.classList.add('ok');
+      });
+    }
+    Array.from(answerEl.children).forEach(x => {
+      x.innerHTML = `<span>${x.dataset.py}</span> <span style="font-size:14px;opacity:0.85;margin-left:4px;">🔊</span>`;
+    });
+    speak(word.hanzi, { rate: audioCtrl.getRate() });
+    review(srsState, word.id, ok ? 2 : 0);
+    saveSRS(srsState);
+
+    footerEl.innerHTML = `<button id="toneNext" class="primary" style="width:100%;padding:13px;font-size:16px;">Дальше →</button>`;
+    footerEl.querySelector('#toneNext').onclick = onDone;
+    renderReportFlag(footerEl, word);
+  }
+
+  if (idkBtn) idkBtn.onclick = () => finishTone(false, null);
+
   finalOpts.forEach(pOpt => {
     const b = document.createElement('button');
     b.className = 'answer';
@@ -498,28 +637,14 @@ export function renderToneCard(root, word, srsState, onDone, meta = {}) {
     b.style.fontWeight = '700';
     b.style.textAlign = 'center';
     b.style.padding = '14px';
+    b.style.minHeight = '58px';
+    b.style.display = 'flex';
+    b.style.alignItems = 'center';
+    b.style.justifyContent = 'center';
     b.textContent = pOpt;
     b.onclick = () => {
       if (!done) {
-        done = true;
-        const ok = pOpt === word.pinyin.trim();
-        b.classList.add(ok ? 'ok' : 'bad');
-        ruTextEl.style.display = 'block';
-        if (!ok) {
-          recordWeakness(word.id, 'toneErr');
-          Array.from(answerEl.children).forEach(x => {
-            if (x.dataset.py === word.pinyin.trim()) x.classList.add('ok');
-          });
-        }
-        Array.from(answerEl.children).forEach(x => {
-          x.innerHTML = `<span>${x.dataset.py}</span> <span style="font-size:14px;opacity:0.85;margin-left:4px;">🔊</span>`;
-        });
-        speak(word.hanzi, { rate: audioCtrl.getRate() });
-        review(srsState, word.id, ok ? 3 : 0);
-        saveSRS(srsState);
-
-        footerEl.innerHTML = `<button id="toneNext" class="cta" style="border:none;cursor:pointer;padding:10px 24px;">Дальше →</button>`;
-        footerEl.querySelector('#toneNext').onclick = onDone;
+        finishTone(pOpt === word.pinyin.trim(), b);
         return;
       }
       const speakHanzi = pinyinToSpeakableHanzi(pOpt, all, word);
@@ -528,6 +653,7 @@ export function renderToneCard(root, word, srsState, onDone, meta = {}) {
     answerEl.appendChild(b);
   });
 }
+
 export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
   const all = window.__ALL_WORDS || [];
   const LIMIT_MS = 5000;
@@ -560,12 +686,14 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
       <div id="blitzAudioBox" class="card-audio"></div>
       <p class="prompt">Быстро нажми перевод!</p>
       <div class="answers" id="answers" style="grid-template-columns:1fr;"></div>
+      <button id="blitzIdkBtn" type="button" class="ghost" style="width:100%;margin-top:8px;padding:10px;font-size:15px;font-weight:600;color:var(--muted);">Я не знаю</button>
       <div id="blitzInfo" style="text-align:center;margin-top:12px;min-height:24px;font-size:16px;"></div>
     </div>`;
 
   const answerEl = root.querySelector('#answers');
   const infoEl = root.querySelector('#blitzInfo');
   const bar = root.querySelector('#timerBar');
+  const idkBtn = root.querySelector('#blitzIdkBtn');
   let done = false;
 
   opts.forEach(o => {
@@ -578,12 +706,15 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     answerEl.appendChild(b);
   });
 
+  if (idkBtn) idkBtn.onclick = () => finish(false, null, false);
+
   mountAudioControl(
     root.querySelector('#blitzAudioBox'),
     r => speak(word.hanzi, { rate: r }),
     { autoPlay: true }
   );
-   const startTime = Date.now();
+
+  const startTime = Date.now();
   const tick = setInterval(() => {
     if (done || !document.body.contains(answerEl)) {
       clearInterval(tick);
@@ -602,19 +733,29 @@ export function renderBlitzCard(root, word, srsState, onDone, meta = {}) {
     if (done || !document.body.contains(answerEl)) return;
     done = true;
     clearInterval(tick);
+    if (idkBtn) idkBtn.style.display = 'none';
     if (btn) btn.classList.add(ok ? 'ok' : 'bad');
     if (!ok) {
+      markHardWord(word.id);
       Array.from(answerEl.children).forEach(b => {
         if (b.textContent === mainRu(word.ru)) b.classList.add('ok');
       });
     }
     infoEl.innerHTML = `${timeout ? '<span style="color:#f87171;">Время вышло! </span>' : ''}<b>${word.hanzi}</b> (${word.pinyin}) — ${word.ru}`;
-    review(srsState, word.id, ok ? 3 : 0);
+    review(srsState, word.id, ok ? 2 : 0);
     saveSRS(srsState);
-    setTimeout(onDone, ok ? 650 : 1400);
+    if (ok) {
+      setTimeout(onDone, 650);
+    } else {
+      const nextWrap = document.createElement('div');
+      nextWrap.style.marginTop = '12px';
+      nextWrap.innerHTML = `<button id="blitzNext" class="primary" style="width:100%;">Дальше →</button>`;
+      infoEl.appendChild(nextWrap);
+      nextWrap.querySelector('#blitzNext').onclick = onDone;
+      renderReportFlag(infoEl, word);
+    }
   }
 }
-
 function shuffle(a) {
   return a.map(v => ({ r: Math.random(), v })).sort((x, y) => x.r - y.r).map(x => x.v);
 }

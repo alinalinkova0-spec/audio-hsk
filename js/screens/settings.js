@@ -1,7 +1,7 @@
-import { safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, normalizeGooseCode, generateGooseCode } from '../storage.js?v=8';
+import { safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, normalizeGooseCode, generateGooseCode } from '../storage.js?v=11';
 import { playFeedback } from '../audio.js?v=13';
 import { loadSRS } from '../srs.js?v=2';
-import { renderFeedbackBox } from '../feedback.js?v=1';
+import { renderFeedbackBox, isAdmin007, renderAdminReportsPanel } from '../feedback.js?v=2';
 export function renderSettings(app, ctx) {
   const {
     srs,
@@ -36,6 +36,7 @@ export function renderSettings(app, ctx) {
     app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:10px 16px 16px;">
       <h1 style="margin:0 0 4px;font-size:28px;">Настройки</h1>
       <p style="font-size:15px;line-height:1.4;color:var(--muted);margin:0 0 12px;">Настрой всё под себя: свой уровень, цель по экзамену, напоминания и оформление</p>
+      <div id="admin007ReportsSlot" style="margin-bottom:12px;"></div>
       <div class="box" style="padding:14px;margin-bottom:10px;text-align:left;">
         <h3 style="margin:0 0 6px;font-size:15px;text-align:center;text-transform:uppercase;letter-spacing:0.5px;font-weight:800;">🦆 Никнейм и Гусиный код</h3>
         <p style="margin:0 0 12px;color:var(--muted);font-size:13px;text-align:center;line-height:1.45;">
@@ -54,6 +55,7 @@ export function renderSettings(app, ctx) {
             </div>
           </div>
           <button id="settingsEmailSaveBtn" class="cta" style="width:100%;padding:11px 14px;font-size:14px;border:none;cursor:pointer;margin-top:2px;">Сохранить никнейм</button>
+          <button id="settingsLogoutBtn" type="button" class="ghost" style="width:100%;padding:9px 14px;font-size:13px;font-weight:700;color:#B42318;border-color:#F5C2C0;background:#FFF8F8;margin-top:4px;">Выйти из учётной записи</button>
         </div>
         <div id="settingsEmailStatus" style="font-size:13px;color:var(--jade);font-weight:600;margin-top:8px;text-align:center;">
           ${safeStorage.getItem('hsk_last_cloud_sync') ? `Синхронизировано в ${safeStorage.getItem('hsk_last_cloud_sync')} ✓` : ''}
@@ -153,6 +155,11 @@ export function renderSettings(app, ctx) {
       </div>
     </section>`;
     renderFeedbackBox(app.querySelector('#settingsFeedbackSlot'));
+        if (isAdmin007()) {
+      renderAdminReportsPanel(app.querySelector('#admin007ReportsSlot'), {
+        getAllWords: () => window.__ALL_WORDS || []
+      });
+    }
         app.querySelector('#saveAllSettingsBtn').onclick = async () => {
       const nameInp = app.querySelector('#settingsNameInput');
       if (nameInp && nameInp.value.trim()) setSavedName(nameInp.value.trim());
@@ -285,7 +292,27 @@ export function renderSettings(app, ctx) {
         }
       };
     }
+    const logoutBtn = app.querySelector('#settingsLogoutBtn');
+    if (logoutBtn) {
+      logoutBtn.onclick = async () => {
+        const code = getSavedEmail();
+        const msg = code
+          ? `Выйти из учётной записи (${code})?\n\nНе забудь сохранить свой код, чтобы вернуться в этот профиль позже.`
+          : 'Выйти из текущей учётной записи и вернуться на стартовый экран?';
+        if (!confirm(msg)) return;
 
+        logoutBtn.disabled = true;
+        logoutBtn.textContent = 'Сохраняем и выходим...';
+        if (code) {
+          await pushCloudState(code).catch(() => {});
+        }
+        logoutEmail();
+        safeStorage.removeItem('hsk_start_lvl');
+        safeStorage.removeItem(getTodayMoodKey());
+        location.hash = '#/';
+        location.reload();
+      };
+    }
     app.querySelector('#remToggle').onchange = async e => {
       const syncSwitch = on => {
         const track = e.target.nextElementSibling;

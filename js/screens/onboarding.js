@@ -1,4 +1,4 @@
-import { safeStorage, getSavedEmail, setSavedName, loginByEmail, pushCloudState, findProfilesByNickname } from '../storage.js?v=8';
+import { safeStorage, getSavedEmail, setSavedName, loginByEmail, pushCloudState, findProfilesByNickname } from '../storage.js?v=11';
 import { speak } from '../audio.js?v=13';
 import { loadSRS } from '../srs.js?v=2';
 
@@ -278,16 +278,12 @@ export function renderOnboarding(app, ctx) {
   syncUrlState();
   if (!userStartLvl) {
     app.innerHTML = `
-<section class="hero" style="max-width:420px;margin:0 auto;padding:8px 16px;">
-  <div style="width:200px;height:200px;margin:0 auto 8px;display:flex;align-items:center;justify-content:center;">
-    <img src="./js/geese/goose_test.jpg" alt="Гусь" onerror="this.style.display='none'" style="max-width:100%;max-height:100%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;">
+  <div style="width:200px;height:200px;margin:0 auto;display:flex;align-items:center;justify-content:center;">
+    <img src="./js/geese/goose_level.jpg" alt="Выбор уровня" onerror="this.style.display='none'" style="max-width:100%;max-height:100%;object-fit:contain;mix-blend-mode:multiply;pointer-events:none;user-select:none;">
   </div>
-  <h1 style="margin:0 0 4px;font-size:24px;">Выбери свой уровень</h1>
-  <p style="font-size:14px;line-height:1.4;color:var(--muted);margin:0 0 10px;">
-    Это тренажёр аудирования по новому <b>HSK 3.0 (1–6 уровни)</b>
-  </p>
-  <div class="box" style="text-align:left;margin:8px 0 4px;padding:12px;">
-    <div style="font-weight:700;font-size:15px;margin-bottom:10px;text-align:center;">С какого уровня начнём?</div>
+  <h1 style="margin:14px 0 18px;font-size:26px;font-weight:800;line-height:1.2;text-align:center;">Выбери свой уровень</h1>
+    <div class="box" style="text-align:left;margin:0;padding:14px;">
+    <div style="font-weight:700;font-size:16px;margin-bottom:10px;text-align:center;">С какого уровня начнём?</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;">
       <button class="ans" data-pick-lvl="1" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🌱 HSK 1</button>
       <button class="ans" data-pick-lvl="2" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🌿 HSK 2</button>
@@ -297,8 +293,8 @@ export function renderOnboarding(app, ctx) {
       <button class="ans" data-pick-lvl="6" style="padding:13px 8px;font-size:17px;font-weight:700;text-align:center;">🐉 HSK 6</button>
     </div>
     <div style="text-align:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">
-      <div style="font-size:13px;color:var(--muted);margin-bottom:6px;">Не знаешь свой уровень?</div>
-      <button id="startPlacementBtn" class="ghost" style="width:100%;padding:10px;font-size:14px;font-weight:700;border-color:var(--jade);color:var(--jade);">Пройти тест (18 вопросов)</button>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:6px;">Не знаешь свой уровень?</div>
+      <button id="startPlacementBtn" class="ghost" style="width:100%;padding:11px;font-size:15px;font-weight:700;border-color:var(--jade);color:var(--jade);">Пройти тест (18 вопросов)</button>
     </div>
   </div>
   <p id="welcomeLoadStatus" style="font-size:13px;color:var(--jade);font-weight:600;margin-top:8px;"></p>

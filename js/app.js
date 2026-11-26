@@ -1,14 +1,16 @@
-import { storageReady, safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, pullCloudState } from './storage.js?v=8';
-import { renderSettings } from './screens/settings.js?v=8';
-import { renderOnboarding } from './screens/onboarding.js?v=13';
+import { storageReady, safeStorage, getSavedEmail, getSavedName, setSavedName, loginByEmail, logoutEmail, pushCloudState, pullCloudState } from './storage.js?v=11';
+import { renderSettings } from './screens/settings.js?v=10';
+import { renderOnboarding } from './screens/onboarding.js?v=16';
 import { renderStats } from './screens/stats.js?v=1';
 import { words as defaultWords, sentences, stories } from './data.js?v=2';
 import { renderLiveChinese } from './screens/live.js?v=1';
 import { renderPlacementTest, renderLevelUpTest } from './screens/tests.js?v=1';
 import { loadSRS, saveSRS, dueItems } from './srs.js?v=2';
-import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=58';
-import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=14';
+import { renderCard, renderBlitzCard, renderReadCard, renderToneCard } from './screens/card.js?v=66';
+import { renderPhraseChoice, renderStoryCard } from './screens/segment.js?v=15';
 import { speak, stopAudio, mountAudioControl, playFeedback } from './audio.js?v=13';
+import { syncRemoteWordFixes, flushPendingReports } from './feedback.js?v=2';
+
 function readUrlState() {
   try {
     const h = String(location.hash || '');
@@ -26,6 +28,7 @@ function readUrlState() {
     return {};
   }
 }
+
 function syncUrlState() {
   try {
     const h = String(location.hash || '#/');
@@ -35,7 +38,7 @@ function syncUrlState() {
     if (lvl && lvl !== 'all') params.set('l', lvl);
     const les = safeStorage.getItem('hsk_les');
     if (les) params.set('les', les);
-       const mood = getTodayMood();
+    const mood = getTodayMood();
     if (mood) params.set('m', mood);
     if (safeStorage.getItem('hsk_morning_reset') === '1') {
       params.set('mr', '1');
@@ -45,7 +48,7 @@ function syncUrlState() {
   } catch (e) {}
 }
 
-const VOCAB_KEY = 'hsk_vocab_v13';
+const VOCAB_KEY = 'hsk_vocab_v14';
 let allWords = loadVocab();
 window.__ALL_WORDS = allWords;
 let selectedLevel = safeStorage.getItem('hsk_lvl') || 'all';
@@ -53,6 +56,7 @@ let selectedLesson = +(safeStorage.getItem('hsk_les') || 0);
 let lastMode = safeStorage.getItem('hsk_mode') || 'words';
 const app = document.getElementById('app');
 const srs = loadSRS();
+
 storageReady.then(() => {
   const savedMail = getSavedEmail();
   if (!savedMail) return;
@@ -65,18 +69,22 @@ storageReady.then(() => {
       const lvlChanged = String(newLvl) !== String(selectedLevel);
       selectedLevel = newLvl;
       selectedLesson = +(safeStorage.getItem('hsk_les') || selectedLesson);
-      if (lvlChanged && typeof downloadLevelsUpTo === 'function') {
+      if ((lvlChanged || allWords.length <= 25) && typeof downloadLevelsUpTo === 'function') {
         await downloadLevelsUpTo(selectedLevel).catch(() => {});
       }
-      router();
+      const curHash = location.hash.replace(/^#\/?/, '').split('?').at(0);
+      if (!['session', 'words', 'blitz', 'phrases', 'stories', 'mistakes'].includes(curHash)) {
+        router();
+      }
     }
   }).catch(() => {});
 });
+
 if (!safeStorage.getItem('hsk_start_date')) {
   safeStorage.setItem('hsk_start_date', new Date().toISOString());
 }
-const SB_URL = 'https://srtoxpakayozfeqxjqdd.supabase.co';
 
+const SB_URL = 'https://' + 'srtoxpakayozfeqxjqdd.supabase.co';
 const SB_KEY = 'sb_publishable_EvXS1QB5OMOKnK8poiXCTQ_VXMcefQ2';
 
 let deferredInstallPrompt = null;
@@ -85,7 +93,6 @@ window.addEventListener('beforeinstallprompt', e => {
   deferredInstallPrompt = e;
   window.dispatchEvent(new Event('pwa-install-ready'));
 });
-
 function getInstallBoxHtml() {
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
   if (isStandalone) return '';
@@ -164,6 +171,7 @@ function bindInstallActions(root) {
     };
   });
 }
+
 function getEffectiveDateStr() {
   const now = new Date();
   const y = now.getFullYear();
@@ -183,7 +191,6 @@ function getNotifyGooseIcon() {
   if (h >= 10 && h < 21) return './js/geese/goose_bonsai.jpg';
   return './js/geese/goose_mood.jpg';
 }
-
 function getTodayKey() {
   return `hsk_daily_${getEffectiveDateStr()}`;
 }
@@ -201,11 +208,15 @@ function getDaily() {
     return { words: 0, blitz: 0, phrases: 0, stories: 0 };
   }
 }
+
 function addDaily(mode, count) {
   const d = getDaily();
   d[mode] = (d[mode] || 0) + count;
   safeStorage.setItem(getTodayKey(), JSON.stringify(d));
+  if (getSavedEmail()) pushCloudState().catch(() => {});
 }
+
+
 function getTodayMoodKey() {
   return `hsk_mood_${getEffectiveDateStr()}`;
 }
@@ -213,12 +224,14 @@ function getTodayMoodKey() {
 function getTodayMood() {
   return safeStorage.getItem(getTodayMoodKey()) || '';
 }
+
 function setTodayMood(mood) {
   safeStorage.setItem(getTodayMoodKey(), mood);
   const prev = Number(safeStorage.getItem('hsk_tired_streak') || '0');
   const next = mood === 'tired' ? prev + 1 : 0;
   safeStorage.setItem('hsk_tired_streak', String(next));
 }
+
 function getMainWeakness() {
   try {
     const data = JSON.parse(safeStorage.getItem('hsk_weakness_v1') || '{}');
@@ -268,9 +281,9 @@ function getDynamicPlan() {
       ? { id: 'stories', title: '3. Лёгкие диалоги', goal: 2 }
       : { id: 'phrases', title: '3. Короткие фразы', goal: stepUp ? 4 : 3 };
     return {
-     focusText: stepUp
-      ? 'Антистресс-режим (3+ дн. подряд — мягко держим темп)'
-      : 'Антистресс-режим: закрепляем знакомое без перегруза',
+      focusText: stepUp
+        ? 'Антистресс-режим (3+ дн. подряд — мягко держим темп)'
+        : 'Антистресс-режим: закрепляем знакомое без перегруза',
       tasks: Array.of(
         { id: 'words', title: '1. Слова на слух (повторение)', goal: stepUp ? 12 : 10 },
         { id: 'blitz', title: '2. Молния', goal: stepUp ? 10 : 8 },
@@ -291,18 +304,38 @@ function getDynamicPlan() {
     )
   };
 }
-
+const VOCAB_CACHE_NAME = 'hsk_vocab_offline_v1';
+const VOCAB_CACHE_REQ = '/__hsk_vocab_offline__.json';
 function loadVocab() {
-  try {
-    const saved = JSON.parse(safeStorage.getItem(VOCAB_KEY));
-    if (Array.isArray(saved) && saved.length) return saved;
-  } catch {}
   return defaultWords.map(w => ({ ...w, level: 4 }));
+}
+async function restoreVocabFromCache() {
+  try {
+    if (!('caches' in window)) return false;
+    const cache = await caches.open(VOCAB_CACHE_NAME);
+    const resp = await cache.match(VOCAB_CACHE_REQ);
+    if (!resp) return false;
+    const saved = await resp.json();
+    if (Array.isArray(saved) && saved.length > 20) {
+      allWords = saved;
+      window.__ALL_WORDS = saved;
+      return true;
+    }
+  } catch {}
+  return false;
 }
 function saveVocab(list) {
   allWords = list;
   window.__ALL_WORDS = list;
-  safeStorage.setItem(VOCAB_KEY, JSON.stringify(list));
+  try {
+    if ('caches' in window) {
+      caches.open(VOCAB_CACHE_NAME).then(cache => {
+        cache.put(VOCAB_CACHE_REQ, new Response(JSON.stringify(list), {
+          headers: { 'Content-Type': 'application/json' }
+        }));
+      }).catch(() => {});
+    }
+  } catch {}
 }
 let lastSfxTime = 0;
 new MutationObserver(mutations => {
@@ -324,12 +357,25 @@ new MutationObserver(mutations => {
     playFeedback(true);
   }
 }).observe(app, { subtree: true, attributes: true, attributeFilter: ['class'] });
+
 window.addEventListener('hashchange', router);
 window.addEventListener('pagehide', stopAudio);
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden) stopAudio();
+  if (document.hidden) {
+    stopAudio();
+  } else {
+    const em = getSavedEmail();
+    const curHash = location.hash.replace(/^#\/?/, '').split('?').at(0);
+    const inActiveSession = ['session', 'words', 'blitz', 'phrases', 'stories', 'mistakes'].includes(curHash);
+    if (em) {
+      pullCloudState(em).then(res => {
+        if (res && res.ok && !inActiveSession) router();
+      }).catch(() => {});
+    }
+  }
 });
 router();
+
 document.querySelectorAll('#topMenu a').forEach(a => {
   a.addEventListener('click', () => {
     const menu = document.getElementById('topMenu');
@@ -340,6 +386,7 @@ document.querySelectorAll('#topMenu a').forEach(a => {
     }
   });
 });
+
 function router() {
   stopAudio();
   const h = location.hash.replace(/^#\/?/, '').split('?').at(0);
@@ -348,6 +395,7 @@ function router() {
   else if (h === 'blitz') startMode('blitz');
   else if (h === 'phrases') startMode('phrases');
   else if (h === 'stories') startMode('stories');
+  else if (h === 'mistakes') startMode('mistakes');
   else if (h === 'placement') renderPlacementTest(app, {
     downloadLevelsUpTo,
     setSelectedLevel: v => { selectedLevel = v; },
@@ -374,17 +422,25 @@ function router() {
     getNotifyGooseIcon,
     home
   });
-
   else if (h === 'live') renderLiveChinese(app, { getAllWords: () => allWords, SB_URL, SB_KEY });
-  else home();
+   else {
+    home();
+    const em = getSavedEmail();
+    if (em) {
+      pullCloudState(em).then(res => {
+        const stillHome = !location.hash.replace(/^#\/?/, '').split('?').at(0);
+        if (res && res.ok && res.found && stillHome) home();
+      }).catch(() => {});
+    }
+  }
 }
 function getFilteredWords() {
   return selectedLevel === 'all'
     ? allWords
     : allWords.filter(w => String(w.level) === String(selectedLevel));
 }
+
 function buildRampQueue(slice) {
-  // Сортируем слова урока по освоенности: сначала хорошо знакомые, в конце — сложные/неизученные
   const scored = slice.map(w => {
     const st = srs[w.id];
     const reps = st ? (st.reps || 0) : 0;
@@ -412,12 +468,14 @@ function buildRampQueue(slice) {
   const rest = pickFrom(midPool, 15 - (part1.length + part2.length + part3.length), 'hard');
   return [...part1, ...part2, ...part3, ...rest];
 }
+
 function getLevelProgress(lvl) {
   const lvlWords = allWords.filter(w => Number(w.level) === lvl);
   if (!lvlWords.length) return 0;
   const known = lvlWords.filter(w => srs[w.id] && srs[w.id].reps >= 1).length;
   return Math.round((known / lvlWords.length) * 100);
 }
+
 function home() {
   const uState = readUrlState();
   const handled = renderOnboarding(app, {
@@ -443,20 +501,7 @@ function home() {
   const p5 = getLevelProgress(5);
   const p6 = getLevelProgress(6);
 
-  const unlocked2 = p1 >= 95 || userStartLvl >= 2;
-  const unlocked3 = (unlocked2 && p2 >= 95) || userStartLvl >= 3;
-  const unlocked4 = (unlocked3 && p3 >= 95) || userStartLvl >= 4;
-  const unlocked5 = (unlocked4 && p4 >= 95) || userStartLvl >= 5;
-  const unlocked6 = (unlocked5 && p5 >= 95) || userStartLvl >= 6;
-
-  if (
-    selectedLevel === 'all' ||
-    (selectedLevel === '2' && !unlocked2) ||
-    (selectedLevel === '3' && !unlocked3) ||
-    (selectedLevel === '4' && !unlocked4) ||
-    (selectedLevel === '5' && !unlocked5) ||
-    (selectedLevel === '6' && !unlocked6)
-  ) {
+  if (!selectedLevel || selectedLevel === 'all') {
     selectedLevel = String(userStartLvl || 1);
     safeStorage.setItem('hsk_lvl', selectedLevel);
   }
@@ -484,7 +529,6 @@ function home() {
       lessonAutoBanner = `<div style="margin:6px auto 0;padding:8px 12px;border-radius:10px;background:#EDF5F0;border:1px solid #B7DEC6;font-size:13px;font-weight:600;color:var(--jade);max-width:420px;">🎉 Урок ${finishedNum} освоен! Открыли следующий — <b>Урок ${selectedLesson + 1}</b></div>`;
     }
   }
-
   const lessonOptions = Array.from({ length: lessonCount }, (_, idx) => {
     const pct = getLessonPct(idx);
     const sel = idx === selectedLesson ? 'selected' : '';
@@ -526,28 +570,42 @@ function home() {
       examBannerHtml = `<div style="margin:6px auto 0;padding:6px 12px;border-radius:10px;background:#EDF5F0;border:1px solid var(--jade);color:var(--jade);font-size:13px;font-weight:700;display:inline-block;">🎉 Экзамен уже сегодня! Удачи, ты справишься!</div>`;
     }
   }
-const taskButtons = plan.tasks.map((t, idx) => {
-  const doneCount = d[t.id] || 0;
-  const isDone = doneCount >= t.goal;
-  const cleanTitle = t.title.replace(/^\d+\.\s*/, '');
-  const numBadge = isDone
-    ? `<span style="width:26px;height:26px;border-radius:50%;background:var(--jade);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">✓</span>`
-    : `<span style="width:26px;height:26px;border-radius:50%;background:#EDF5F0;color:var(--jade);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${idx + 1}</span>`;
-  const todayColor = isDone ? 'var(--jade)' : (doneCount > 0 ? 'var(--beak)' : 'var(--fg)');
-  return `
-    <button class="ans" data-mode="${t.id}" style="display:grid;grid-template-columns:1fr 56px 56px;align-items:center;gap:6px;padding:12px 14px;border-color:${isDone ? 'var(--jade)' : ''};background:${isDone ? '#F4FAF6' : ''};">
-      <span style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--fg);text-align:left;line-height:1.25;">
-        ${numBadge}
-        <span>${cleanTitle}</span>
-      </span>
-      <span style="text-align:center;font-size:16px;font-weight:700;color:${todayColor};">${doneCount}</span>
-      <span style="text-align:center;font-size:15px;font-weight:600;color:var(--muted);">${t.goal}</span>
-    </button>`;
-}).join('');
 
+  const taskButtons = plan.tasks.map((t, idx) => {
+    const doneCount = d[t.id] || 0;
+    const isDone = doneCount >= t.goal;
+    const cleanTitle = t.title.replace(/^\d+\.\s*/, '');
+    const numBadge = isDone
+      ? `<span style="width:26px;height:26px;border-radius:50%;background:var(--jade);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">✓</span>`
+      : `<span style="width:26px;height:26px;border-radius:50%;background:#EDF5F0;color:var(--jade);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">${idx + 1}</span>`;
+    const todayColor = isDone ? 'var(--jade)' : (doneCount > 0 ? 'var(--beak)' : 'var(--fg)');
+    return `
+      <button class="ans" data-mode="${t.id}" style="display:grid;grid-template-columns:1fr 56px 56px;align-items:center;gap:6px;padding:12px 14px;border-color:${isDone ? 'var(--jade)' : ''};background:${isDone ? '#F4FAF6' : ''};">
+        <span style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;color:var(--fg);text-align:left;line-height:1.25;">
+          ${numBadge}
+          <span>${cleanTitle}</span>
+        </span>
+        <span style="text-align:center;font-size:16px;font-weight:700;color:${todayColor};">${doneCount}</span>
+        <span style="text-align:center;font-size:15px;font-weight:600;color:var(--muted);">${t.goal}</span>
+      </button>`;
+  }).join('');
+  let hardCount = 0;
+  try {
+    const hArr = JSON.parse(safeStorage.getItem('hsk_hard_words_v1') || '[]');
+    if (Array.isArray(hArr)) hardCount = hArr.filter(id => allWords.some(w => w.id === id)).length;
+  } catch {}
+  const mistakesBtnHtml = hardCount > 0
+    ? `<button class="ans" data-mode="mistakes" style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-color:#F3D19E;background:#FFF8EB;margin-top:2px;">
+         <span style="display:flex;align-items:center;gap:10px;font-size:15px;font-weight:700;color:#B45309;">
+           <span style="width:26px;height:26px;border-radius:50%;background:#FDE68A;color:#92400E;display:inline-flex;align-items:center;justify-content:center;font-size:13px;">🔁</span>
+           <span>Работа над ошибками</span>
+         </span>
+         <span style="font-size:15px;font-weight:800;color:#B45309;padding-right:8px;">${hardCount}</span>
+       </button>`
+    : '';
   const hr = new Date().getHours();
   const isPlanDoneToday = plan.tasks.every(t => (d[t.id] || 0) >= t.goal);
-    const allDoneBannerHtml = isPlanDoneToday
+  const allDoneBannerHtml = isPlanDoneToday
     ? `<div class="box" style="margin:6px auto 10px;padding:12px;background:#EDF5F0;border:1.5px solid var(--jade);text-align:center;">
          <div style="font-size:16px;font-weight:800;color:var(--jade);margin-bottom:4px;">🎉 На сегодня всё выполнено!</div>
          <div style="font-size:13px;color:var(--fg);">Весь дневной план закрыт. Хочешь позаниматься ещё? Выбери любое задание ниже!</div>
@@ -561,7 +619,7 @@ const taskButtons = plan.tasks.map((t, idx) => {
     safeStorage.setItem(surpriseKey, String(surpriseHr));
   }
 
-let gooseImg = './js/geese/goose.jpg';
+  let gooseImg = './js/geese/goose.jpg';
   if (isPlanDoneToday) {
     gooseImg = './js/geese/goose_plan_done.gif';
   } else if (hr >= 6 && hr < 10) {
@@ -573,6 +631,7 @@ let gooseImg = './js/geese/goose.jpg';
   } else if (hr === surpriseHr || curMood === 'tired') {
     gooseImg = './js/geese/goose_bonsai.jpg';
   }
+
   const streak = Number(safeStorage.getItem('hsk_streak') || 0);
   const nextLvl = curLvlNum + 1;
   const canLevelUp = streak >= 10 && curLvlNum < 6;
@@ -583,49 +642,52 @@ let gooseImg = './js/geese/goose.jpg';
          <a href="#/levelup" class="cta" style="padding:8px 14px;font-size:13px;display:inline-block;">🚀 Проверить и открыть HSK ${nextLvl}</a>
        </div>`
     : '';
-    const showProgress = safeStorage.getItem('hsk_show_progress') !== '0';
-const curLvlPct = getLevelProgress(curLvlNum);
-const progressBarHtml = showProgress ? `
-  <div class="box" style="width:100%;max-width:420px;margin:8px auto 0;padding:10px 12px;text-align:left;">
-    <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg);margin-bottom:6px;">
-      <span>Уровень HSK ${curLvlNum}</span>
-      <span style="color:var(--jade);">${curLvlPct}% до финиша</span>
-    </div>
-    <div style="width:100%;height:8px;background:#EFE7D6;border-radius:999px;overflow:hidden;">
-      <div style="width:${curLvlPct}%;height:100%;background:var(--jade);border-radius:999px;transition:width 0.3s;"></div>
-    </div>
-  </div>` : '';
-    app.innerHTML = `
+
+  const showProgress = safeStorage.getItem('hsk_show_progress') !== '0';
+  const curLvlPct = getLevelProgress(curLvlNum);
+  const progressBarHtml = showProgress ? `
+    <div class="box" style="width:100%;max-width:420px;margin:8px auto 0;padding:10px 12px;text-align:left;">
+      <div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--fg);margin-bottom:6px;">
+        <span>Уровень HSK ${curLvlNum}</span>
+        <span style="color:var(--jade);">${curLvlPct}% до финиша</span>
+      </div>
+      <div style="width:100%;height:8px;background:#EFE7D6;border-radius:999px;overflow:hidden;">
+        <div style="width:${curLvlPct}%;height:100%;background:var(--jade);border-radius:999px;transition:width 0.3s;"></div>
+      </div>
+    </div>` : '';
+
+  app.innerHTML = `
     <section class="hero">
-          ${(getSavedName() || getSavedEmail()) ? `<div style="margin:0 auto 6px;padding:6px 12px;border-radius:999px;background:#EDF5F0;border:1px solid #B7DEC6;display:inline-block;font-size:13px;font-weight:700;color:var(--jade);">👋 Привет, ${getSavedName() || getSavedEmail().split('@').at(0)}! Рад снова тебя видеть</div>` : ''}
+      <div id="livePeersBadge" style="margin:0 auto 6px;padding:6px 14px;border-radius:999px;background:${navigator.onLine ? '#EDF5F0' : '#FFF4E6'};border:1px solid ${navigator.onLine ? '#B7DEC6' : '#F3D19E'};display:inline-block;font-size:13px;font-weight:700;color:${navigator.onLine ? 'var(--jade)' : '#8A4B08'};">${navigator.onLine ? '🦆 Сейчас в сети никого — ты мотивируешь других!' : '📴 Офлайн-режим: словарь и прогресс сохраняются на телефоне и отправятся в облако, когда появится сеть'}</div>
       <div class="controls" style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:2px auto 4px;">
         <select id="lvlSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">
           <option value="1" ${selectedLevel === '1' ? 'selected' : ''}>HSK 1 (${p1}%)</option>
-          <option value="2" ${selectedLevel === '2' ? 'selected' : ''} ${unlocked2 ? '' : 'disabled'}>${unlocked2 ? `HSK 2 (${p2}%)` : 'HSK 2 🔒'}</option>
-          <option value="3" ${selectedLevel === '3' ? 'selected' : ''} ${unlocked3 ? '' : 'disabled'}>${unlocked3 ? `HSK 3 (${p3}%)` : 'HSK 3 🔒'}</option>
-          <option value="4" ${selectedLevel === '4' ? 'selected' : ''} ${unlocked4 ? '' : 'disabled'}>${unlocked4 ? `HSK 4 (${p4}%)` : 'HSK 4 🔒'}</option>
-          <option value="5" ${selectedLevel === '5' ? 'selected' : ''} ${unlocked5 ? '' : 'disabled'}>${unlocked5 ? `HSK 5 (${p5}%)` : 'HSK 5 🔒'}</option>
-          <option value="6" ${selectedLevel === '6' ? 'selected' : ''} ${unlocked6 ? '' : 'disabled'}>${unlocked6 ? `HSK 6 (${p6}%)` : 'HSK 6 🔒'}</option>
+          <option value="2" ${selectedLevel === '2' ? 'selected' : ''}>HSK 2 (${p2}%)</option>
+          <option value="3" ${selectedLevel === '3' ? 'selected' : ''}>HSK 3 (${p3}%)</option>
+          <option value="4" ${selectedLevel === '4' ? 'selected' : ''}>HSK 4 (${p4}%)</option>
+          <option value="5" ${selectedLevel === '5' ? 'selected' : ''}>HSK 5 (${p5}%)</option>
+          <option value="6" ${selectedLevel === '6' ? 'selected' : ''}>HSK 6 (${p6}%)</option>
         </select>
         <select id="lesSel" style="width:auto;min-width:128px;max-width:162px;padding:8px 10px;font-size:14px;text-align:center;">${lessonOptions}</select>
       </div>
       <div style="color:var(--muted);font-size:12px;font-weight:700;letter-spacing:0.4px;margin:2px 0 6px;text-transform:uppercase;">
         ${curMood === 'tired' ? 'Антистресс-режим' : (curMood === 'high' ? 'Усиленный темп' : 'Обычный ритм')} · Фокус дня: закрепляем знакомое
       </div>
-   ${levelUpBanner}
-   ${lessonAutoBanner}
+      ${levelUpBanner}
+      ${lessonAutoBanner}
       <div style="width:100%;max-width:420px;margin:6px auto 0;display:flex;flex-direction:column;gap:8px;">
-      ${allDoneBannerHtml}
+        ${allDoneBannerHtml}
         <div style="display:grid;grid-template-columns:1fr 56px 56px;align-items:baseline;gap:6px;margin-top:4px;padding:0 14px;">
           <span style="font-size:14px;font-weight:700;color:var(--fg);text-align:left;">План на сегодня:</span>
           <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Сегодня</span>
           <span style="font-size:11px;font-weight:600;color:var(--muted);text-align:center;">Норма</span>
         </div>
         ${taskButtons}
+        ${mistakesBtnHtml}
       </div>
       ${progressBarHtml}
-   ${examBannerHtml ? examBannerHtml : (safeStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:8px auto 0;padding:7px 12px;border-radius:10px;background:#F3EFE4;font-size:12px;color:var(--muted);max-width:420px;">Хочешь поменять уровень, звук или напоминания? Загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;">Настройки</a></div>`)}
-            <div style="width:100%;max-width:250px;margin:10px auto 0;text-align:center;">
+      ${examBannerHtml ? examBannerHtml : (safeStorage.getItem('hsk_settings_visited') ? '' : `<div style="margin:8px auto 0;padding:7px 12px;border-radius:10px;background:#F3EFE4;font-size:12px;color:var(--muted);max-width:420px;">Хочешь поменять уровень, звук или напоминания? Загляни в <a href="#/settings" style="color:var(--jade);font-weight:700;">Настройки</a></div>`)}
+      <div style="width:100%;max-width:250px;margin:10px auto 0;text-align:center;">
         <img src="${gooseImg}" alt="Гусь-помощник" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;user-select:none;display:block;">
       </div>
       <div style="max-width:340px;margin:10px auto 0;text-align:center;">
@@ -633,19 +695,25 @@ const progressBarHtml = showProgress ? `
       </div>
     </section>`;
 
-  app.querySelector('#lvlSel').onchange = e => {
+  app.querySelector('#lvlSel').onchange = async e => {
     selectedLevel = e.target.value;
     selectedLesson = 0;
     safeStorage.setItem('hsk_lvl', selectedLevel);
+    safeStorage.setItem('hsk_start_lvl', selectedLevel);
     safeStorage.setItem('hsk_les', '0');
     history.replaceState(null, '', '#/');
+    if (typeof downloadLevelsUpTo === 'function') {
+      await downloadLevelsUpTo(Number(selectedLevel) || 1).catch(() => {});
+    }
     home();
   };
+
   app.querySelector('#lesSel').onchange = e => {
     selectedLesson = +e.target.value;
     safeStorage.setItem('hsk_les', String(selectedLesson));
     history.replaceState(null, '', '#/');
   };
+
   const shareBtn = app.querySelector('#shareAppBtn');
   if (shareBtn) {
     shareBtn.onclick = async () => {
@@ -662,13 +730,43 @@ const progressBarHtml = showProgress ? `
         const orig = shareBtn.textContent;
         shareBtn.textContent = '✓ Ссылка скопирована в буфер!';
         setTimeout(() => { shareBtn.textContent = orig; }, 2200);
-      }      }
-    }
+      }
+    };
+  }
   app.querySelectorAll('[data-mode]').forEach(btn => {
     btn.onclick = () => {
       location.hash = '#/' + btn.dataset.mode;
     };
   });
+    (async () => {
+    const badge = app.querySelector('#livePeersBadge');
+    if (!badge) return;
+    if (!navigator.onLine) {
+      badge.textContent = '📴 Офлайн-режим: словарь и прогресс сохраняются на телефоне и отправятся в облако, когда появится сеть';
+      return;
+    }
+    try {
+      const sinceIso = new Date(Date.now() - 20 * 60000).toISOString();
+      const res = await fetch(`${SB_URL}/rest/v1/cloud_state?select=email&updated_at=gte.${encodeURIComponent(sinceIso)}&limit=50`, {
+        headers: { apikey: SB_KEY, Authorization: `Bearer ${SB_KEY}` }
+      });
+      if (!res.ok) return;
+      const rows = await res.json();
+      const myCode = (getSavedEmail() || '').toUpperCase();
+      const others = Array.isArray(rows)
+        ? rows.filter(r => r.email && !String(r.email).startsWith('report_') && String(r.email).toUpperCase() !== myCode).length
+        : 0;
+      if (!document.body.contains(badge)) return;
+      if (others > 0) {
+        const mod10 = others % 10;
+        const mod100 = others % 100;
+        const word = (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) ? 'человека' : 'человек';
+        badge.textContent = `🦆 Одновременно с тобой занимаются: ${others} ${word}`;
+      } else {
+        badge.textContent = '🦆 Сейчас в сети никого — ты мотивируешь других!';
+      }
+    } catch {}
+  })();
 }
 function startMode(mode, extraRun = false) {
   lastMode = mode;
@@ -690,6 +788,7 @@ function startMode(mode, extraRun = false) {
     }
     return hits;
   };
+
   let steps = [];
   if (mode === 'words') {
     const filtered = getFilteredWords();
@@ -762,8 +861,7 @@ function startMode(mode, extraRun = false) {
       word: w,
       meta: { label: `${idx + 1}/${mixedPool.length}` }
     }));
-  }
-  else if (mode === 'stories') {
+  } else if (mode === 'stories') {
     const curLvl = Number(selectedLevel) || 1;
     const lvlStories = stories.filter(st => {
       const firstLvl = Number(String(st.level).split('-').at(0)) || 1;
@@ -779,6 +877,20 @@ function startMode(mode, extraRun = false) {
     const needCount = Math.max(1, remainingForPlan);
     const pickedStories = Array.from({ length: needCount }, (_, idx) => rankedStories[idx % rankedStories.length].st);
     steps = pickedStories.map(st => ({ type: 'story', story: st }));
+    } else if (mode === 'mistakes') {
+    let hardIds = [];
+    try { hardIds = JSON.parse(safeStorage.getItem('hsk_hard_words_v1') || '[]'); } catch {}
+    const mistakeWords = allWords.filter(w => hardIds.includes(w.id));
+    if (!mistakeWords.length) {
+      home();
+      return;
+    }
+    const queue = mistakeWords.slice(0, 15);
+    steps = queue.map((w, idx) => ({
+      type: 'card',
+      word: w,
+      meta: { tier: 'hard', clearHardOnOk: true, label: `Ошибка ${idx + 1}/${queue.length}` }
+    }));
   } else {
     const curLvl = Number(selectedLevel) || 1;
     const lvlSentences = sentences.filter(s => !s.level || Number(s.level) <= curLvl);
@@ -790,10 +902,34 @@ function startMode(mode, extraRun = false) {
     const queue = Array.from({ length: needCount }, (_, idx) => rankedSentences[idx % rankedSentences.length].s);
     steps = queue.map(s => ({ type: 'phrase', sentence: s }));
   }
-
   let i = 0;
-
   function renderTaskFinishScreen() {
+        if (mode === 'mistakes') {
+      let remHard = 0;
+      try {
+        const hArr = JSON.parse(safeStorage.getItem('hsk_hard_words_v1') || '[]');
+        if (Array.isArray(hArr)) remHard = hArr.filter(id => allWords.some(w => w.id === id)).length;
+      } catch {}
+      app.innerHTML = `<section class="hero" style="max-width:420px;margin:0 auto;padding:24px 16px;">
+        <div style="width:100%;max-width:210px;margin:0 auto;">
+          <img src="./js/geese/goose_win.jpg" alt="Ошибки отработаны" onerror="this.style.display='none'" style="width:100%;height:auto;mix-blend-mode:multiply;pointer-events:none;display:block;">
+        </div>
+        <h1 style="margin-top:10px;color:var(--jade);font-size:24px;">${remHard === 0 ? 'Все ошибки отработаны! 🎉' : 'Сессия завершена! ✓'}</h1>
+        <p style="color:var(--muted);margin-top:6px;font-size:15px;">${remHard === 0 ? 'Список трудных слов полностью очищен.' : `Осталось разобрать трудных слов: <b>${remHard}</b>.`}</p>
+        <div style="display:flex;flex-direction:column;gap:10px;max-width:340px;margin:18px auto 0;">
+          ${remHard > 0 ? `<button id="goMoreBtn" class="primary" style="width:100%;padding:13px;">Продолжить разбор (${remHard})</button>` : ''}
+          <button id="goMenuBtn" class="ghost" style="width:100%;padding:12px;">Вернуться в меню</button>
+        </div>
+      </section>`;
+      const moreBtn = app.querySelector('#goMoreBtn');
+      if (moreBtn) moreBtn.onclick = () => { stopAudio(); startMode('mistakes', true); };
+      app.querySelector('#goMenuBtn').onclick = () => {
+        stopAudio();
+        history.replaceState(null, '', '#/');
+        router();
+      };
+      return;
+    }
     const freshPlan = getDynamicPlan();
     const dNow = getDaily();
     const allTasksDone = freshPlan.tasks.every(t => (dNow[t.id] || 0) >= t.goal);
@@ -844,15 +980,15 @@ function startMode(mode, extraRun = false) {
         startMode(nextSequential.id, false);
       };
     }
-    app.querySelector('#goMenuBtn').onclick = () => {
+        app.querySelector('#goMenuBtn').onclick = () => {
       stopAudio();
-      if (location.hash === '#/' || !location.hash) home();
-      else location.hash = '#/';
+      history.replaceState(null, '', '#/');
+      router();
     };
   }
 
   function next() {
-    if (i > 0) {
+if (i > 0 && mode !== 'mistakes') {
       addDaily(mode, 1);
       saveSRS(srs);
     }
@@ -870,6 +1006,7 @@ function startMode(mode, extraRun = false) {
   }
   next();
 }
+
 async function downloadLevelsUpTo(maxLvl, stEl) {
   const levels = Array.from({ length: maxLvl }, (_, idx) => idx + 1);
   if (stEl) stEl.textContent = `Загрузка словаря HSK 1–${maxLvl}...`;
@@ -878,18 +1015,18 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), 3500);
   const [resNew, resRu] = await Promise.all([
-  fetch('./hsk.json?v=3').catch(() => null),
-  fetch(ruUrl, { signal: ctrl.signal }).catch(() => null)
-    ]).finally(() => clearTimeout(timer));
-    let raw = null;
-    if (resNew && resNew.ok) {
-      const txt = await resNew.text();
-      if (txt && !txt.trim().startsWith('<')) {
-        raw = JSON.parse(txt);
-      }
+    fetch('./hsk.json?v=4').catch(() => null),
+    fetch(ruUrl, { signal: ctrl.signal }).catch(() => null)
+  ]).finally(() => clearTimeout(timer));
+  let raw = null;
+  if (resNew && resNew.ok) {
+    const txt = await resNew.text();
+    if (txt && !txt.trim().startsWith('<')) {
+      raw = JSON.parse(txt);
     }
-    if (!raw) return;
-    const shortRu = str => {
+  }
+  if (!raw) return;
+  const shortRu = str => {
     const firstMeaning = String(str || '')
       .split(/[,;/()]/)
       .map(s => s.trim())
@@ -925,7 +1062,7 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
       if (!hanzi || !levels.includes(newLvl)) continue;
       const found = ruMap.get(hanzi);
       const pinyin = String(item.pinyin || (found && found.pinyin) || '').trim();
-            const rawRu = (found && found.ru && /[а-яё]/i.test(found.ru))
+      const rawRu = (found && found.ru && /[а-яё]/i.test(found.ru))
         ? found.ru
         : (localFallbackMap.get(hanzi) || shortRu(item.ru || '') || shortRu(item.en || ''));
       if (rawRu) {
@@ -959,9 +1096,10 @@ async function downloadLevelsUpTo(maxLvl, stEl) {
   if (parsed.length > 0) {
     saveVocab(parsed);
   }
-if (stEl) stEl.textContent = `Готово! Загружено ${parsed.length} слов (HSK 1–${maxLvl}).`;
-return parsed;
+  if (stEl) stEl.textContent = `Готово! Загружено ${parsed.length} слов (HSK 1–${maxLvl}).`;
+  return parsed;
 }
+
 function markTodayVisit() {
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
@@ -979,6 +1117,7 @@ function markTodayVisit() {
   }
   return days;
 }
+
 let lastKnownDay = getTodayMoodKey();
 setInterval(() => {
   const curDay = getTodayMoodKey();
@@ -998,9 +1137,9 @@ setInterval(() => {
     const doneAll = d.words >= 12 && d.blitz >= 10 && d.phrases >= 4 && d.stories >= 2;
     safeStorage.setItem(todaySentKey, '1');
     if (!doneAll) {
-new Notification('HSK 3.0 听力训练 🦆', {
+      new Notification('HSK 3.0 听力训练 🦆', {
         body: 'Пора размять слух! План на сегодня ещё ждёт тебя.',
-          icon: getNotifyGooseIcon()
+        icon: getNotifyGooseIcon()
       });
     }
   }
@@ -1014,7 +1153,9 @@ if ('serviceWorker' in navigator) {
     });
   }).catch(() => {});
 }
+
 document.querySelectorAll('#topMenu a').forEach(a => a.addEventListener('click', () => { const m = document.getElementById('topMenu'); if (m) m.removeAttribute('open'); }));
+
 function bootRouter() {
   try {
     const restoredLvl = safeStorage.getItem('hsk_lvl') || safeStorage.getItem('hsk_start_lvl');
@@ -1035,10 +1176,33 @@ function bootRouter() {
     }
   }
 }
+
 bootRouter();
 Promise.race([
   storageReady.catch(() => {}),
   new Promise(r => setTimeout(r, 500))
 ]).then(() => {
   bootRouter();
+});
+window.addEventListener('online', () => {
+  markTodayVisit();
+  const em = getSavedEmail();
+  if (em) pushCloudState(em).catch(() => {});
+  const curHash = location.hash.replace(/^#\/?/, '').split('?').at(0);
+  if (!curHash) home();
+});
+window.addEventListener('offline', () => {
+  const curHash = location.hash.replace(/^#\/?/, '').split('?').at(0);
+  if (!curHash) home();
+});
+
+restoreVocabFromCache().then(async restored => {
+  const curLvl = Number(safeStorage.getItem('hsk_lvl') || safeStorage.getItem('hsk_start_lvl') || 1);
+  if (!restored && curLvl > 0 && navigator.onLine) {
+    await downloadLevelsUpTo(curLvl).catch(() => {});
+  }
+    await syncRemoteWordFixes(allWords).catch(() => {});
+  flushPendingReports().catch(() => {});
+  const curHash = location.hash.replace(/^#\/?/, '').split('?').at(0);
+  if (!curHash) home();
 });

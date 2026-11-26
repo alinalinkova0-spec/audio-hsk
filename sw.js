@@ -1,4 +1,4 @@
-const CACHE = 'hsk-audio-live-v115';
+const CACHE = 'hsk-audio-live-v127';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -19,6 +19,7 @@ const PRECACHE_ASSETS = [
   './manifest.json',
   './js/geese/goose.jpg'
 ];
+
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE).then(cache =>
@@ -33,6 +34,7 @@ self.addEventListener('install', event => {
   );
   self.skipWaiting();
 });
+
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys()
@@ -49,7 +51,6 @@ self.addEventListener('fetch', event => {
   const cleanReq = new Request(url.origin + url.pathname);
   const isMedia = /\.(jpg|jpeg|png|gif|webp|mp3|wav|svg|ico)$/i.test(url.pathname);
 
-  // Для картинок и аудио — сразу из кэша, если есть (никаких тормозов на телефоне)
   if (isMedia) {
     event.respondWith(
       caches.match(cleanReq, { ignoreSearch: true }).then(cached => {
@@ -65,9 +66,9 @@ self.addEventListener('fetch', event => {
     );
     return;
   }
-  // Для HTML/JS/CSS — сначала свежая сеть, при любом сбое или обрыве мгновенный откат в кэш
+
   event.respondWith(
-    fetch(event.request)
+    fetch(event.request, { cache: 'no-store' })
       .then(res => {
         if (res && res.ok) {
           const copy1 = res.clone();
@@ -82,6 +83,7 @@ self.addEventListener('fetch', event => {
       .catch(() =>
         caches.match(event.request, { ignoreSearch: true })
           .then(cached => cached || caches.match(cleanReq, { ignoreSearch: true }))
+          .then(cached => cached || (event.request.mode === 'navigate' ? caches.match('./index.html') : Response.error()))
       )
   );
 });
